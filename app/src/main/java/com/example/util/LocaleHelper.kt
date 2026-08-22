@@ -1,0 +1,385 @@
+package com.example.util
+
+import com.example.data.model.AppLanguage
+
+object LocaleHelper {
+
+    fun get(key: String, lang: String): String {
+        val strings = when (lang.lowercase()) {
+            "hi" -> hindiStrings
+            "gu" -> gujaratiStrings
+            else -> englishStrings
+        }
+        return strings[key] ?: englishStrings[key] ?: key
+    }
+
+    val englishStrings = mapOf(
+        "app_name" to "MannSaathi",
+        "app_subtitle" to "A simple companion for memory, routine and family connection",
+        "medical_disclaimer_title" to "Medical & Safety Disclaimer",
+        "medical_disclaimer" to "MannSaathi is designed as a daily support and routine companion for people living with cognitive difficulties and their caregivers. It does not diagnose dementia, assess disease severity, prescribe treatments, or replace professional medical care. Medication details are recorded by family/clinicians. Please consult your physician for medical advice.",
+        
+        // Navigation / Roles
+        "patient_mode" to "Patient Mode",
+        "caregiver_mode" to "Caregiver Mode",
+        "clinician_mode" to "Clinician Mode",
+        "switch_mode" to "Switch Role",
+        "demo_mode" to "Try Demo Mode",
+        "demo_banner" to "DEMO MODE — PRE-LOADED SAMPLE DATA",
+        
+        // Patient Home & Main Buttons
+        "today_orientation" to "TODAY",
+        "people_family" to "PEOPLE",
+        "my_day_routine" to "MY DAY",
+        "medicines" to "MEDICINE",
+        "my_memories" to "MEMORIES",
+        "games_play" to "PLAY",
+        "mood_checkin" to "MOOD",
+        "help_emergency" to "HELP",
+        "talk_ai" to "TALK",
+        
+        // Orientation Screen
+        "orientation_title" to "Today is...",
+        "day" to "Day",
+        "date" to "Date",
+        "time" to "Time",
+        "location" to "Location",
+        "you_are" to "You are",
+        "caregiver_is" to "Your Caregiver",
+        "next_event" to "Next Up",
+        "tap_to_hear" to "Tap any card to hear it aloud",
+        
+        // Routine
+        "morning" to "Morning",
+        "afternoon" to "Afternoon",
+        "evening" to "Evening",
+        "night" to "Night",
+        "btn_done" to "DONE",
+        "btn_later" to "LATER",
+        "btn_help" to "HELP",
+        "all_done_great" to "Great job! All activities completed.",
+        
+        // Medication
+        "med_time" to "Medicine Time",
+        "mark_taken" to "I Took It",
+        "mark_later" to "Take Later",
+        "status_taken" to "Taken",
+        "status_pending" to "Pending",
+        "status_delayed" to "Delayed",
+        "med_disclaimer" to "Medication information is entered by your caregiver or healthcare professional. This application does not prescribe or change medicines.",
+        
+        // People
+        "people_title" to "People Who Love You",
+        "btn_call" to "Call",
+        "who_is_this" to "Who is this?",
+        
+        // Memories
+        "memories_title" to "My Cherished Memories",
+        "gentle_prompt" to "Gentle Prompt",
+        "listen_story" to "Listen Story",
+        
+        // Games
+        "games_title" to "Gentle Mind Activities",
+        "games_subtitle" to "Enjoyable cognitive stimulation. No scoring, no pressure.",
+        "game_1_name" to "Picture Matching",
+        "game_2_name" to "Find the Object",
+        "game_3_name" to "Color Identification",
+        "game_4_name" to "Food or Clothes?",
+        "game_5_name" to "Sequence of the Day",
+        "game_6_name" to "Familiar Objects",
+        "game_7_name" to "Simple 3-Item Recall",
+        "game_8_name" to "Count the Items",
+        "game_9_name" to "Gentle Pattern Match",
+        "game_10_name" to "Family Photo Guess",
+        "encouraging_feedback" to "Wonderful! Let's explore together.",
+        "next_question" to "Next Card",
+        
+        // Mood
+        "how_do_you_feel" to "How are you feeling right now?",
+        "mood_happy" to "Happy",
+        "mood_okay" to "Okay",
+        "mood_not_good" to "A Bit Down",
+        "mood_sad" to "Sad",
+        "mood_tired" to "Tired",
+        "mood_angry" to "Upset",
+        "mood_saved" to "Thank you. Your caregiver has been notified.",
+        
+        // Help
+        "help_title" to "How can we help you right now?",
+        "call_caregiver" to "Call Caregiver",
+        "call_family" to "Call Family",
+        "call_doctor" to "Call Doctor",
+        "emergency_call" to "Emergency 108",
+        "help_subtitle" to "Press any button below to connect immediately.",
+        
+        // Settings & Accessibility
+        "accessibility_settings" to "Accessibility & Display",
+        "large_text" to "Large Text",
+        "high_contrast" to "High Contrast Mode",
+        "picture_mode" to "Picture / Low-Literacy Mode",
+        "voice_guidance" to "Voice Guidance (TTS)",
+        "language_select" to "Select Language",
+        "enter_pin" to "Enter 4-Digit Caregiver PIN",
+        "pin_incorrect" to "Incorrect PIN. Default demo PIN is 1234",
+        
+        // Caregiver Dashboard
+        "caregiver_dashboard" to "Caregiver Dashboard",
+        "patient_overview" to "Patient Overview",
+        "routine_adherence" to "Today's Routine Adherence",
+        "medication_status" to "Medication Tracker",
+        "recent_mood" to "Patient Mood Check-ins",
+        "upcoming_appointments" to "Upcoming Appointments",
+        "caregiver_notes" to "Observations & Notes",
+        "add_routine" to "Add Routine Item",
+        "add_medication" to "Add Medication",
+        "add_appointment" to "Add Appointment",
+        "add_family" to "Add Family Member",
+        "add_memory" to "Add Memory",
+        "add_note" to "Add Clinical/Care Note",
+        "voice_studio" to "Caregiver Voice Studio",
+        "voice_studio_desc" to "Record your voice saying gentle reminders for medication and routine tasks.",
+        
+        // Clinician
+        "clinician_overview" to "Clinical Summary & Adherence Review",
+        "export_report" to "Export PDF / Summary",
+        "clinical_disclaimer" to "For clinical review only. Behavioral observations and adherence patterns recorded by patient & caregiver."
+    )
+
+    val hindiStrings = mapOf(
+        "app_name" to "मान्न साथी",
+        "app_subtitle" to "याददाश्त, दैनिक दिनचर्या और परिवार के साथ जुड़ाव का सरल साथी",
+        "medical_disclaimer_title" to "चिकित्सा एवं सुरक्षा अस्वीकरण",
+        "medical_disclaimer" to "मान्न साथी दैनिक जीवन और दिनचर्या में सहायता के लिए बनाया गया है। यह किसी बीमारी का निदान, दवा की सिफारिश या डॉक्टर का विकल्प नहीं है। दवाइयों की जानकारी परिवार/चिकित्सक द्वारा भरी जाती है। चिकित्सा परामर्श के लिए अपने डॉक्टर से संपर्क करें।",
+        
+        "patient_mode" to "बुजुर्ग/मरीज मोड",
+        "caregiver_mode" to "देखभालकर्ता (Caregiver) मोड",
+        "clinician_mode" to "डॉक्टर/चिकित्सक मोड",
+        "switch_mode" to "रोल बदलें",
+        "demo_mode" to "डेमो मोड शुरू करें",
+        "demo_banner" to "डेमो मोड — नमूना डेटा लोड है",
+        
+        "today_orientation" to "आज",
+        "people_family" to "अपने लोग",
+        "my_day_routine" to "मेरा दिन",
+        "medicines" to "दवाई",
+        "my_memories" to "यादें",
+        "games_play" to "खेल",
+        "mood_checkin" to "मन का हाल",
+        "help_emergency" to "मदद",
+        "talk_ai" to "बोलकर पूछें",
+        
+        "orientation_title" to "आज का दिन...",
+        "day" to "वार / दिन",
+        "date" to "तारीख",
+        "time" to "समय",
+        "location" to "स्थान",
+        "you_are" to "आप हैं",
+        "caregiver_is" to "आपकी देखभालकर्ता",
+        "next_event" to "अगला कार्य",
+        "tap_to_hear" to "सुनने के लिए किसी भी कार्ड को छुएं",
+        
+        "morning" to "सुबह",
+        "afternoon" to "दोपहर",
+        "evening" to "शाम",
+        "night" to "रात",
+        "btn_done" to "हो गया",
+        "btn_later" to "बाद में",
+        "btn_help" to "मदद",
+        "all_done_great" to "बहुत अच्छा! सारे कार्य पूरे हो गए।",
+        
+        "med_time" to "दवाई का समय",
+        "mark_taken" to "दवाई ले ली",
+        "mark_later" to "थोड़ी देर बाद",
+        "status_taken" to "ले ली",
+        "status_pending" to "बाकी है",
+        "status_delayed" to "देर हुई",
+        "med_disclaimer" to "दवाइयों की जानकारी आपके परिवार या डॉक्टर द्वारा दर्ज की गई है। यह ऐप दवाइयां नहीं बदलता।",
+        
+        "people_title" to "आपके प्यारे परिजन",
+        "btn_call" to "फोन लगाएं",
+        "who_is_this" to "यह कौन हैं?",
+        
+        "memories_title" to "मेरी प्यारी यादें",
+        "gentle_prompt" to "याद करने का संकेत",
+        "listen_story" to "कहानी सुनें",
+        
+        "games_title" to "हल्की दिमागी गतिविधियां",
+        "games_subtitle" to "मनोरंजक अभ्यास। कोई अंक या तनाव नहीं।",
+        "game_1_name" to "चित्र मिलान",
+        "game_2_name" to "वस्तु खोजें",
+        "game_3_name" to "रंग पहचान",
+        "game_4_name" to "खाना या कपड़े?",
+        "game_5_name" to "दिन का क्रम",
+        "game_6_name" to "जानी-पहचानी चीजें",
+        "game_7_name" to "3 चीजों का स्मरण",
+        "game_8_name" to "चीजें गिनें",
+        "game_9_name" to "पैटर्न मिलान",
+        "game_10_name" to "पारिवारिक फोटो पहचान",
+        "encouraging_feedback" to "बहुत बढ़िया! चलिए साथ मिलकर देखते हैं।",
+        "next_question" to "अगला कार्ड",
+        
+        "how_do_you_feel" to "आप अभी कैसा महसूस कर रहे हैं?",
+        "mood_happy" to "खुश",
+        "mood_okay" to "ठीक",
+        "mood_not_good" to "थोड़ा सुस्त",
+        "mood_sad" to "उदास",
+        "mood_tired" to "थका हुआ",
+        "mood_angry" to "नाराज़",
+        "mood_saved" to "धन्यवाद। आपकी स्थिति दर्ज हो गई है।",
+        
+        "help_title" to "हम आपकी क्या मदद कर सकते हैं?",
+        "call_caregiver" to "देखभालकर्ता को फोन",
+        "call_family" to "परिवार को फोन",
+        "call_doctor" to "डॉक्टर को फोन",
+        "emergency_call" to "आपातकालीन 108",
+        "help_subtitle" to "तुरंत बात करने के लिए नीचे दिए बटन दबाएं।",
+        
+        "accessibility_settings" to "सुगमता और प्रदर्शन सेटिंग",
+        "large_text" to "बड़े अक्षर",
+        "high_contrast" to "हाई कंट्रास्ट मोड",
+        "picture_mode" to "चित्र मोड (कम पढ़े-लिखे लोगों के लिए)",
+        "voice_guidance" to "आवाज़ में निर्देश (TTS)",
+        "language_select" to "भाषा चुनें",
+        "enter_pin" to "4-अंकों का पिन दर्ज करें",
+        "pin_incorrect" to "गलत पिन। डिफॉल्ट पिन 1234 है",
+        
+        "caregiver_dashboard" to "देखभालकर्ता डैशबोर्ड",
+        "patient_overview" to "मरीज की वर्तमान स्थिति",
+        "routine_adherence" to "आज की दिनचर्या",
+        "medication_status" to "दवाई की स्थिति",
+        "recent_mood" to "मरीज का हालिया मूड",
+        "upcoming_appointments" to "आगामी अपॉइंटमेंट",
+        "caregiver_notes" to "देखभाल टिप्पणियां",
+        "add_routine" to "दिनचर्या जोड़ें",
+        "add_medication" to "दवाई जोड़ें",
+        "add_appointment" to "अपॉइंटमेंट जोड़ें",
+        "add_family" to "परिवार का सदस्य जोड़ें",
+        "add_memory" to "याद जोड़ें",
+        "add_note" to "टिप्पणी दर्ज करें",
+        "voice_studio" to "देखभालकर्ता वॉइस रिकॉर्डिंग",
+        "voice_studio_desc" to "अपनी आवाज़ में दवाई और दिनचर्या के ऑडियो निर्देश रिकॉर्ड करें।",
+        
+        "clinician_overview" to "चिकित्सकीय समीक्षा डैशबोर्ड",
+        "export_report" to "रिपोर्ट देखें / एक्सपोर्ट करें",
+        "clinical_disclaimer" to "यह डेटा केवल नैदानिक समीक्षा के लिए है। यह स्वतः कोई चिकित्सीय निष्कर्ष नहीं निकालता।"
+    )
+
+    val gujaratiStrings = mapOf(
+        "app_name" to "મનસાથી",
+        "app_subtitle" to "સ્મૃતિ, દિનચર્યા અને પારિવારિક સ્નેહ માટે સરળ સાથી",
+        "medical_disclaimer_title" to "તબીબી અને સુરક્ષા સૂચના",
+        "medical_disclaimer" to "મનસાથી વડીલો અને સંભાળ રાખનારાઓની રોજિંદી સરળતા માટે બનાવેલ એપ્લિકેશન છે. આ એપ કોઈ રોગનું નિદાન કરતી નથી કે દવા આપતી નથી. દવાઓની વિગતો પરિવાર કે ડૉક્ટર દ્વારા દાખલ થાય છે. તબીબી સલાહ માટે હંમેશા તમારા ડૉક્ટરનો સંપર્ક કરો.",
+        
+        "patient_mode" to "વડીલ મોડ",
+        "caregiver_mode" to "સંભાળકર્તા (Caregiver) મોડ",
+        "clinician_mode" to "ડૉક્ટર મોડ",
+        "switch_mode" to "મોડ બદલો",
+        "demo_mode" to "ડેમો શરૂ કરો",
+        "demo_banner" to "ડેમો મોડ — કમલાબાની નમૂના માહિતી",
+        
+        "today_orientation" to "આજનો દિવસ",
+        "people_family" to "આપણા સ્નેહીઓ",
+        "my_day_routine" to "મારો દિવસ",
+        "medicines" to "દવાઓ",
+        "my_memories" to "મારી યાદો",
+        "games_play" to "રમતો",
+        "mood_checkin" to "મનનો આનંદ",
+        "help_emergency" to "મદદ",
+        "talk_ai" to "બોલીને પૂછો",
+        
+        "orientation_title" to "આજનો દિવસ...",
+        "day" to "વાર",
+        "date" to "તારીખ",
+        "time" to "સમય",
+        "location" to "શહેર",
+        "you_are" to "તમે છો",
+        "caregiver_is" to "તમારી સંભાળ રાખનાર",
+        "next_event" to "હવે પછી",
+        "tap_to_hear" to "સાંભળવા માટે કોઈપણ કાર્ડ પર અડો",
+        
+        "morning" to "સવાર",
+        "afternoon" to "બપોર",
+        "evening" to "સાંજ",
+        "night" to "રાત",
+        "btn_done" to "પૂરું થયું",
+        "btn_later" to "પછીથી",
+        "btn_help" to "મદદ",
+        "all_done_great" to "ખૂબ સરસ! બધા કાર્યો પૂરા થઈ ગયા.",
+        
+        "med_time" to "દવાનો સમય",
+        "mark_taken" to "દવા લઈ લીધી",
+        "mark_later" to "થોડીવાર પછી",
+        "status_taken" to "લેવાઈ ગઈ",
+        "status_pending" to "બાકી છે",
+        "status_delayed" to "મોડું થયું",
+        "med_disclaimer" to "દવાઓની માહિતી તમારા પરિવાર કે ડૉક્ટર દ્વારા નોંધાયેલ છે. આ એપ દવાઓ બદલતી નથી.",
+        
+        "people_title" to "તમારા વહાલા પરિજનો",
+        "btn_call" to "ફોન કરો",
+        "who_is_this" to "આ કોણ છે?",
+        
+        "memories_title" to "મારી મીઠી યાદો",
+        "gentle_prompt" to "યાદ કરવાનો સંકેત",
+        "listen_story" to "વાર્તા સાંભળો",
+        
+        "games_title" to "હળવી મનની રમતો",
+        "games_subtitle" to "આનંદદાયક અભ્યાસ. કોઈ સ્કોર કે દબાણ વગર.",
+        "game_1_name" to "ચિત્ર સરખામણી",
+        "game_2_name" to "વસ્તુ શોધો",
+        "game_3_name" to "રંગ ઓળખ",
+        "game_4_name" to "ખોરાક કે કપડાં?",
+        "game_5_name" to "દિવસનો ક્રમ",
+        "game_6_name" to "રોજિંદી વસ્તુઓ",
+        "game_7_name" to "3 વસ્તુઓની યાદ",
+        "game_8_name" to "વસ્તુઓ ગણો",
+        "game_9_name" to "સરળ પેટર્ન",
+        "game_10_name" to "પરિવારનો ફોટો ઓળખો",
+        "encouraging_feedback" to "ખૂબ સુંદર! ચાલો સાથે મળીને જોઈએ.",
+        "next_question" to "આગળનું કાર્ડ",
+        
+        "how_do_you_feel" to "તમને અત્યારે કેવું લાગે છે?",
+        "mood_happy" to "ખુશ",
+        "mood_okay" to "સારું / સામાન્ય",
+        "mood_not_good" to "થોડું સુસ્ત",
+        "mood_sad" to "ઉદાસ",
+        "mood_tired" to "થાકેલું",
+        "mood_angry" to "ચીડાયેલું",
+        "mood_saved" to "આભાર. તમારી સ્થિતિ નોંધાઈ ગઈ છે.",
+        
+        "help_title" to "અમે તમને કેવી રીતે મદદ કરીએ?",
+        "call_caregiver" to "દીકરી / સંભાળકર્તાને ફોન",
+        "call_family" to "પરિવારને ફોન",
+        "call_doctor" to "ડૉક્ટરને ફોન",
+        "emergency_call" to "ઇમરજન્સી 108",
+        "help_subtitle" to "તરત વાત કરવા માટે નીચેના બટન દબાવો.",
+        
+        "accessibility_settings" to "સરળતા અને ડિસ્પ્લે સેટિંગ્સ",
+        "large_text" to "મોટા અક્ષરો",
+        "high_contrast" to "હાઈ કોન્ટ્રાસ્ટ મોડ",
+        "picture_mode" to "ચિત્ર મોડ (ઓછું ભણેલા લોકો માટે)",
+        "voice_guidance" to "અવાજ દ્વારા સૂચના (TTS)",
+        "language_select" to "ભાષા પસંદ કરો",
+        "enter_pin" to "૪-આંકડાનો પિન દાખલ કરો",
+        "pin_incorrect" to "ખોટો પિન. ડેમો પિન 1234 છે",
+        
+        "caregiver_dashboard" to "સંભાળકર્તા ડેશબોર્ડ",
+        "patient_overview" to "વડીલની વર્તમાન સ્થિતિ",
+        "routine_adherence" to "આજની દિનચર્યા",
+        "medication_status" to "દવાની સ્થિતિ",
+        "recent_mood" to "તાજેતરનો મૂડ",
+        "upcoming_appointments" to "આગામી મુલાકાત (ડૉક્ટર)",
+        "caregiver_notes" to "સંભાળ અવલોકન નોંધ",
+        "add_routine" to "દિનચર્યા ઉમેરો",
+        "add_medication" to "દવા ઉમેરો",
+        "add_appointment" to "મુલાકાત ઉમેરો",
+        "add_family" to "પરિવારનું સભ્ય ઉમેરો",
+        "add_memory" to "યાદગીરી ઉમેરો",
+        "add_note" to "નોંધ ઉમેરો",
+        "voice_studio" to "સંભાળકર્તા ઓડિયો સ્ટુડિયો",
+        "voice_studio_desc" to "તમારા પોતાના અવાજમાં દવા અને નિયમિત કામોની યાદી રેકોર્ડ કરો.",
+        
+        "clinician_overview" to "ક્લિનિકલ સારાંશ ડેશબોર્ડ",
+        "export_report" to "રિપોર્ટ સારાંશ",
+        "clinical_disclaimer" to "માત્ર ક્લિનિકલ સમીક્ષા માટે. દર્દી અને સંભાળકર્તા દ્વારા નોંધાયેલ દિનચર્યા ડેટા."
+    )
+}
