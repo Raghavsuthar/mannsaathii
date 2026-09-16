@@ -60,7 +60,8 @@ data class PatientProfile(
     val highContrastMode: Boolean = false,
     val pictureMode: Boolean = false,
     val speechSpeed: Float = 0.85f, // Slightly slower for elderly
-    val voiceAssistanceEnabled: Boolean = true
+    val voiceAssistanceEnabled: Boolean = true,
+    val photoUri: String? = null
 )
 
 @Entity(tableName = "routine_items")
@@ -127,25 +128,29 @@ data class FamilyMember(
     val introEn: String,
     val introHi: String,
     val introGu: String,
-    val sortPriority: Int = 1
+    val sortPriority: Int = 1,
+    val photoUri: String? = null
 )
 
 @Entity(tableName = "memories")
 data class Memory(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val titleEn: String,
-    val titleHi: String,
+    val titleHi: String = "",
     val titleGu: String,
     val descriptionEn: String,
-    val descriptionHi: String,
+    val descriptionHi: String = "",
     val descriptionGu: String,
-    val yearOrEra: String,
-    val location: String,
+    val yearOrEra: String,          // e.g. "1985", "Childhood", "Wedding Day"
+    val location: String,           // e.g. "Somnath Temple", "Our old house in Ahmedabad"
     val iconEmoji: String = "🌸",
-    val photoColorHex: Long = 0xFF9A5B00,
+    val photoColorHex: Long = 0xFF9A5B00,   // fallback color when no photo
     val promptEn: String = "Do you remember this beautiful day?",
     val promptHi: String = "क्या आपको यह सुंदर दिन याद है?",
-    val promptGu: String = "શું તમને આ સુંદર દિવસ યાદ છે?"
+    val promptGu: String = "શું તમને આ સુંદર દિવસ યાદ છે?",
+    val photoUri: String? = null,   // local file path after saving
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "mood_entries")

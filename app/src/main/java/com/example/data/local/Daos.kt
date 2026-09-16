@@ -53,6 +53,9 @@ interface MedicationDao {
     @Query("SELECT * FROM medications ORDER BY id ASC")
     fun getAllMedications(): Flow<List<Medication>>
 
+    @Query("SELECT * FROM medications WHERE id = :id LIMIT 1")
+    suspend fun getMedicationById(id: Long): Medication?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMedication(med: Medication): Long
 
@@ -116,7 +119,7 @@ interface FamilyDao {
 
 @Dao
 interface MemoryDao {
-    @Query("SELECT * FROM memories ORDER BY id ASC")
+    @Query("SELECT * FROM memories ORDER BY updatedAt DESC, id DESC")
     fun getAllMemories(): Flow<List<Memory>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

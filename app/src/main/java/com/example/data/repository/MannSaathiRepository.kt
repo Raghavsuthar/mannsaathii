@@ -47,11 +47,12 @@ class MannSaathiRepository(private val db: AppDatabase) {
         db.medicationDao().updateStatus(id, status, takenTime)
     }
 
-    suspend fun saveMedication(med: Medication) {
-        if (med.id == 0L) {
+    suspend fun saveMedication(med: Medication): Long {
+        return if (med.id == 0L) {
             db.medicationDao().insertMedication(med)
         } else {
             db.medicationDao().updateMedication(med)
+            med.id
         }
     }
 
@@ -87,10 +88,11 @@ class MannSaathiRepository(private val db: AppDatabase) {
 
     // Memories
     suspend fun saveMemory(memory: Memory) {
+        val now = System.currentTimeMillis()
         if (memory.id == 0L) {
-            db.memoryDao().insertMemory(memory)
+            db.memoryDao().insertMemory(memory.copy(createdAt = now, updatedAt = now))
         } else {
-            db.memoryDao().updateMemory(memory)
+            db.memoryDao().updateMemory(memory.copy(updatedAt = now))
         }
     }
 

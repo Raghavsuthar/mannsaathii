@@ -18,11 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.data.model.FamilyMember
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
@@ -197,19 +199,31 @@ fun FamilyMemberCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Large Avatar Container
-                Box(
-                    modifier = Modifier
-                        .size(if (isPictureMode) 80.dp else 68.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(BentoPeopleBg)
-                        .border(2.dp, BentoPeopleBorder, RoundedCornerShape(22.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = member.iconEmoji,
-                        fontSize = if (isPictureMode) 44.sp else 36.sp
+                // Avatar / Photo Container
+                if (!member.photoUri.isNullOrBlank()) {
+                    AsyncImage(
+                        model = member.photoUri,
+                        contentDescription = member.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(if (isPictureMode) 80.dp else 68.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .border(2.dp, BentoPeopleBorder, RoundedCornerShape(22.dp))
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(if (isPictureMode) 80.dp else 68.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(BentoPeopleBg)
+                            .border(2.dp, BentoPeopleBorder, RoundedCornerShape(22.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = member.iconEmoji,
+                            fontSize = if (isPictureMode) 44.sp else 36.sp
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.weight(1f)) {

@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +19,7 @@ import com.example.ui.patient.*
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.viewmodel.PatientScreen
+import com.example.util.MedicationNotificationHelper
 
 class MainActivity : ComponentActivity() {
 
@@ -26,6 +28,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        MedicationNotificationHelper.createNotificationChannel(this)
+        handleNotificationIntent(intent)
+
         setContent {
             val uiState by viewModel.uiState.collectAsState()
 
@@ -79,6 +84,20 @@ class MainActivity : ComponentActivity() {
                     SafeAiAssistantDialog(uiState = uiState, viewModel = viewModel)
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleNotificationIntent(intent)
+    }
+
+    private fun handleNotificationIntent(intent: Intent?) {
+        val destination = intent?.getStringExtra(MedicationNotificationHelper.EXTRA_DESTINATION)
+        if (destination == MedicationNotificationHelper.DESTINATION_MEDICINE) {
+            viewModel.requestSwitchRole(UserRole.PATIENT)
+            viewModel.setPatientScreen(PatientScreen.MEDICINE)
         }
     }
 }

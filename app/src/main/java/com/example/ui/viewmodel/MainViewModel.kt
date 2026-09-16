@@ -8,6 +8,7 @@ import com.example.data.model.*
 import com.example.data.repository.MannSaathiRepository
 import com.example.util.LocaleHelper
 import com.example.util.TtsHelper
+import com.example.worker.MedicationScheduler
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -103,6 +104,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.medications.collect { meds ->
                 _uiState.update { it.copy(medications = meds) }
+                MedicationScheduler.rescheduleAll(getApplication(), meds)
             }
         }
 
@@ -292,6 +294,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val timeStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
             repository.updateMedicationStatus(med.id, MedicationStatus.TAKEN, timeStr)
+            MedicationScheduler.cancelMedicationReminder(getApplication(), med.id)
             val lang = _uiState.value.profile.language
             val msg = when (lang) {
                 "hi" -> "बहुत अच्छा! आपकी दवाई का समय पूरा हुआ।"
@@ -305,6 +308,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun markMedicationLater(med: Medication) {
         viewModelScope.launch {
             repository.updateMedicationStatus(med.id, MedicationStatus.DELAYED, null)
+            MedicationScheduler.scheduleSnoozeReminder(getApplication(), med, delayMinutes = 10)
             val lang = _uiState.value.profile.language
             val msg = when (lang) {
                 "hi" -> "ठीक है, हम थोड़ी देर में दोबारा याद दिलाएंगे।"
@@ -316,11 +320,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveMedication(med: Medication) {
-        viewModelScope.launch { repository.saveMedication(med) }
+        viewModelScope.launch {
+            val medId = repository.saveMedication(med)
+            val updatedMed = if (med.id == 0L) med.copy(id = medId) else med
+            MedicationScheduler.scheduleMedicationReminder(getApplication(), updatedMed)
+        }
     }
 
     fun deleteMedication(med: Medication) {
-        viewModelScope.launch { repository.deleteMedication(med) }
+        viewModelScope.launch {
+            repository.deleteMedication(med)
+            MedicationScheduler.cancelMedicationReminder(getApplication(), med.id)
+        }
+    }
+
+    fun triggerTestMedicationReminder(med: Medication) {
+        MedicationScheduler.scheduleTestReminder(getApplication(), med, delaySeconds = 2)
     }
 
     // Appointments

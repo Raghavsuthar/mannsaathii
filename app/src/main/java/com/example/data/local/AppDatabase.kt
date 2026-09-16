@@ -42,7 +42,7 @@ class AppTypeConverters {
         EmergencyContact::class,
         CaregiverNote::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(AppTypeConverters::class)

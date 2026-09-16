@@ -16,10 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.data.model.Memory
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
@@ -122,20 +124,47 @@ fun PatientMemoriesScreen(
         }
 
         // Memories List
+        if (uiState.memories.isEmpty()) {
+            item {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp,
+                    border = androidx.compose.foundation.BorderStroke(2.dp, BentoMemoriesBorder),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = "🌸", fontSize = 48.sp)
+                        Text(
+                            text = LocaleHelper.get("no_memories_yet", lang),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                color = BentoOnBackground
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
         items(uiState.memories, key = { it.id }) { memory ->
             val title = when (lang) {
-                "hi" -> memory.titleHi
-                "gu" -> memory.titleGu
+                "hi" -> memory.titleHi.ifBlank { memory.titleEn }
+                "gu" -> memory.titleGu.ifBlank { memory.titleEn }
                 else -> memory.titleEn
             }
             val description = when (lang) {
-                "hi" -> memory.descriptionHi
-                "gu" -> memory.descriptionGu
+                "hi" -> memory.descriptionHi.ifBlank { memory.descriptionEn }
+                "gu" -> memory.descriptionGu.ifBlank { memory.descriptionEn }
                 else -> memory.descriptionEn
             }
             val prompt = when (lang) {
-                "hi" -> memory.promptHi
-                "gu" -> memory.promptGu
+                "hi" -> memory.promptHi.ifBlank { memory.promptEn }
+                "gu" -> memory.promptGu.ifBlank { memory.promptEn }
                 else -> memory.promptEn
             }
 
@@ -149,6 +178,9 @@ fun PatientMemoriesScreen(
                 onSpeak = {
                     val fullNarrative = "$title. $description. $prompt"
                     viewModel.speakText(fullNarrative)
+                },
+                onStop = {
+                    viewModel.stopSpeaking()
                 }
             )
         }
@@ -163,7 +195,8 @@ fun MemoryCard(
     prompt: String,
     isLargeText: Boolean,
     lang: String,
-    onSpeak: () -> Unit
+    onSpeak: () -> Unit,
+    onStop: () -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(28.dp),
@@ -181,36 +214,67 @@ fun MemoryCard(
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Photo Simulation Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(BentoMemoriesBg)
-                    .border(1.5.dp, BentoMemoriesBorder, RoundedCornerShape(20.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+            // Photo or Nostalgic Colored Banner
+            if (!memory.photoUri.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(210.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .border(1.5.dp, BentoMemoriesBorder, RoundedCornerShape(20.dp))
                 ) {
-                    Text(text = memory.iconEmoji, fontSize = 48.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "📍 ${memory.location} • 📅 ${memory.yearOrEra}",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = BentoMemoriesText,
-                            fontWeight = FontWeight.Black
-                        )
+                    AsyncImage(
+                        model = memory.photoUri,
+                        contentDescription = title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.65f),
+                        shape = RoundedCornerShape(bottomStart = 20.dp, topEnd = 16.dp),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        Text(
+                            text = "📍 ${memory.location} • 📅 ${memory.yearOrEra}",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.Black
+                            ),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(memory.photoColorHex))
+                        .border(1.5.dp, BentoMemoriesBorder, RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(text = memory.iconEmoji, fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "📍 ${memory.location} • 📅 ${memory.yearOrEra}",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.Black
+                            )
+                        )
+                    }
                 }
             }
 
             // Title & Description
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = title,
+                    text = "${memory.iconEmoji} $title",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Black,
                         color = BentoOnBackground,
@@ -220,9 +284,9 @@ fun MemoryCard(
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyLarge.copy(
-                        color = BentoOnBackground.copy(alpha = 0.8f),
-                        lineHeight = 24.sp,
-                        fontSize = if (isLargeText) 18.sp else 15.sp,
+                        color = BentoOnBackground.copy(alpha = 0.85f),
+                        lineHeight = 26.sp,
+                        fontSize = if (isLargeText) 19.sp else 16.sp,
                         fontWeight = FontWeight.Medium
                     )
                 )
@@ -247,33 +311,55 @@ fun MemoryCard(
                             text = prompt,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = BentoGreenAccent
+                                color = BentoGreenAccent,
+                                fontSize = if (isLargeText) 17.sp else 14.sp
                             )
                         )
                     }
                 }
             }
 
-            // Listen Story Action Button
-            Button(
-                onClick = onSpeak,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BentoGreenAccent,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("btn_narrate_${memory.id}")
+            // Listen / Stop Story Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(imageVector = Icons.Default.VolumeUp, contentDescription = "Listen")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "▶ " + LocaleHelper.get("listen_story", lang),
-                    fontWeight = FontWeight.Black,
-                    fontSize = if (isLargeText) 16.sp else 14.sp
-                )
+                Button(
+                    onClick = onSpeak,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BentoGreenAccent,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .testTag("btn_narrate_${memory.id}")
+                ) {
+                    Icon(imageVector = Icons.Default.VolumeUp, contentDescription = "Listen")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "▶ " + LocaleHelper.get("listen_story", lang),
+                        fontWeight = FontWeight.Black,
+                        fontSize = if (isLargeText) 17.sp else 14.sp
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onStop,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .height(52.dp)
+                        .testTag("btn_stop_narrate_${memory.id}")
+                ) {
+                    Icon(imageVector = Icons.Default.Stop, contentDescription = "Stop", tint = AlertRed)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = LocaleHelper.get("stop_story", lang),
+                        fontWeight = FontWeight.Bold,
+                        color = AlertRed
+                    )
+                }
             }
         }
     }

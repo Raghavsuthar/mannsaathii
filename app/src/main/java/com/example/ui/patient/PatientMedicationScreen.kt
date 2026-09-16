@@ -1,5 +1,10 @@
 package com.example.ui.patient
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,10 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.data.model.Medication
 import com.example.data.model.MedicationStatus
 import com.example.ui.theme.*
@@ -34,11 +41,31 @@ fun PatientMedicationScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val lang = uiState.profile.language
     val isLargeText = uiState.profile.largeTextMode
     val isPictureMode = uiState.profile.pictureMode
 
     val pendingCount = uiState.medications.count { it.status == MedicationStatus.PENDING }
+
+    // Request notification permission for Android 13+ (API 33+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { /* Permission granted or denied */ }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    var testBannerMessage by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
         modifier = modifier
@@ -125,6 +152,100 @@ fun PatientMedicationScreen(
             }
         }
 
+        // WorkManager Reminders Status Card
+        item {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = BentoGreenAccentLight,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, BentoGreenAccent.copy(alpha = 0.4f), RoundedCornerShape(24.dp))
+                    .testTag("workmanager_reminder_card")
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(BentoGreenAccent),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("⏰", fontSize = 20.sp)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "WorkManager Auto-Scheduler",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = BentoGreenAccent
+                                )
+                            )
+                            Text(
+                                text = "Background reminders active for all scheduled dosage times",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = BentoOnBackground.copy(alpha = 0.8f),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Reminders run reliably in the background even if the app is closed. Tapping \"Later\" automatically schedules a 10-minute snooze reminder.",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = BentoOnBackground.copy(alpha = 0.85f),
+                            lineHeight = 18.sp
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = if (testBannerMessage != null) testBannerMessage!! else "Test notification pipeline:",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = BentoGreenAccent,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Button(
+                            onClick = {
+                                val targetMed = uiState.medications.firstOrNull { it.status != MedicationStatus.TAKEN }
+                                    ?: uiState.medications.firstOrNull()
+                                if (targetMed != null) {
+                                    viewModel.triggerTestMedicationReminder(targetMed)
+                                    testBannerMessage = "🔔 Notification scheduled for ${targetMed.name} in 2s!"
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = BentoGreenAccent,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(14.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            modifier = Modifier.testTag("btn_trigger_test_notification")
+                        ) {
+                            Text("🔔 Test Alert (2s)", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
         // Medication Cards
         items(uiState.medications, key = { it.id }) { med ->
             val instructions = when (lang) {
@@ -151,6 +272,10 @@ fun PatientMedicationScreen(
                 },
                 onTaken = { viewModel.markMedicationTaken(med) },
                 onLater = { viewModel.markMedicationLater(med) },
+                onTestAlert = {
+                    viewModel.triggerTestMedicationReminder(med)
+                    testBannerMessage = "🔔 Test reminder for ${med.name} scheduled!"
+                },
                 onHelp = {
                     val helpMsg = when (lang) {
                         "hi" -> "दवाई की सहायता के लिए देखभालकर्ता ${uiState.profile.caregiverName} को सूचित कर दिया गया है।"
@@ -208,6 +333,7 @@ fun MedicationCard(
     onSpeak: () -> Unit,
     onTaken: () -> Unit,
     onLater: () -> Unit,
+    onTestAlert: (() -> Unit)? = null,
     onHelp: () -> Unit
 ) {
     val isTaken = med.status == MedicationStatus.TAKEN
@@ -268,6 +394,14 @@ fun MedicationCard(
                                 text = "(${LocaleHelper.get("status_taken", lang)} @ ${med.takenTime})",
                                 style = MaterialTheme.typography.labelSmall.copy(color = BentoMoodText, fontWeight = FontWeight.Bold)
                             )
+                        } else {
+                            Text(
+                                text = "• WorkManager Armed",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = BentoGreenAccent,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
                         }
                     }
 
@@ -301,15 +435,33 @@ fun MedicationCard(
                     }
                 }
 
-                IconButton(
-                    onClick = onSpeak,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White)
-                        .border(1.dp, BentoHeaderBorder, RoundedCornerShape(12.dp))
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "🔊", fontSize = 18.sp)
+                    IconButton(
+                        onClick = onSpeak,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White)
+                            .border(1.dp, BentoHeaderBorder, RoundedCornerShape(12.dp))
+                    ) {
+                        Text(text = "🔊", fontSize = 16.sp)
+                    }
+
+                    if (onTestAlert != null) {
+                        IconButton(
+                            onClick = onTestAlert,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(BentoGreenAccentLight)
+                                .border(1.dp, BentoGreenAccent.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        ) {
+                            Text(text = "🔔", fontSize = 16.sp)
+                        }
+                    }
                 }
             }
 
