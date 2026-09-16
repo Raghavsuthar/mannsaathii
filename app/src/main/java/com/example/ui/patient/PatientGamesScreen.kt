@@ -1,24 +1,34 @@
 package com.example.ui.patient
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.ui.patient.games.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.viewmodel.PatientScreen
@@ -34,8 +44,13 @@ fun PatientGamesScreen(
     val lang = uiState.profile.language
     val isLargeText = uiState.profile.largeTextMode
 
-    var selectedGameIndex by remember { mutableStateOf<Int?>(null) }
-    var feedbackMessage by remember { mutableStateOf<String?>(null) }
+    var selectedActivityId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var completedCount by rememberSaveable { mutableIntStateOf(0) }
+    val favoriteIds = remember { mutableStateListOf<Int>() }
+
+    val activities = remember(uiState.familyMembers, uiState.memories, lang) {
+        CognitiveActivityProvider.getActivities(uiState)
+    }
 
     LazyColumn(
         modifier = modifier
@@ -44,7 +59,7 @@ fun PatientGamesScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Back and Header
+        // Top Navigation & Stats Bar
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -53,9 +68,8 @@ fun PatientGamesScreen(
             ) {
                 Button(
                     onClick = {
-                        if (selectedGameIndex != null) {
-                            selectedGameIndex = null
-                            feedbackMessage = null
+                        if (selectedActivityId != null) {
+                            selectedActivityId = null
                         } else {
                             viewModel.setPatientScreen(PatientScreen.HOME)
                         }
@@ -65,20 +79,58 @@ fun PatientGamesScreen(
                         contentColor = BentoOnBackground
                     ),
                     shape = RoundedCornerShape(18.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BentoHeaderBorder),
+                    border = BorderStroke(1.dp, BentoHeaderBorder),
                     modifier = Modifier.testTag("games_back_button")
                 ) {
-                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = BentoGreenAccent)
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = BentoGreenAccent
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (selectedGameIndex != null) "All Activities" else "Home", fontWeight = FontWeight.Black, color = BentoOnBackground)
+                    Text(
+                        text = if (selectedActivityId != null) {
+                            LocaleHelper.get("all_activities", lang)
+                        } else {
+                            "Home"
+                        },
+                        fontWeight = FontWeight.Black,
+                        color = BentoOnBackground,
+                        fontSize = if (isLargeText) 18.sp else 15.sp
+                    )
                 }
 
+                // Completed Counter Badge
+                if (completedCount > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = BentoMoodBg,
+                        border = BorderStroke(1.dp, BentoMoodBorder)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(text = "⭐", fontSize = 16.sp)
+                            Text(
+                                text = "$completedCount ${LocaleHelper.get("activities_completed_today", lang)}",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = BentoMoodText
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Voice Overview Speaker
                 IconButton(
                     onClick = {
                         val speech = when (lang) {
-                            "hi" -> "यहाँ मनोरंजक और हल्की गतिविधियां हैं। कोई भी अभ्यास चुनकर आनंद लें।"
-                            "gu" -> "અહીં મનોરંજક અને સરળ રમતો છે. કોઈપણ પ્રવૃત્તિ પસંદ કરીને આનંદ માણો."
-                            else -> "Gentle mind activities. No scores, pure enjoyment."
+                            "hi" -> "यहाँ मनोरंजक और हल्की गतिविधियां हैं। कोई अंक या परीक्षा नहीं है। आनंद लें।"
+                            "gu" -> "અહીં મનોરંજક અને હળવી રમતો છે. કોઈ સ્કોર કે પરીક્ષા નથી. મજા માણો."
+                            else -> "Gentle mind activities. No scores, no pressure, pure joy."
                         }
                         viewModel.speakText(speech)
                     },
@@ -93,8 +145,8 @@ fun PatientGamesScreen(
             }
         }
 
-        if (selectedGameIndex == null) {
-            // Games Directory
+        if (selectedActivityId == null) {
+            // Header Banner
             item {
                 Surface(
                     shape = RoundedCornerShape(28.dp),
@@ -108,7 +160,7 @@ fun PatientGamesScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
                             text = "🧩 " + LocaleHelper.get("games_title", lang),
@@ -123,29 +175,93 @@ fun PatientGamesScreen(
                             text = LocaleHelper.get("games_subtitle", lang),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = BentoPlayText.copy(alpha = 0.85f),
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                fontSize = if (isLargeText) 16.sp else 14.sp
                             )
                         )
                     }
                 }
             }
 
-            val gamesList = listOf(
-                Triple(1, "game_1_name", "🌸"),
-                Triple(2, "game_2_name", "🍎"),
-                Triple(3, "game_3_name", "🟢"),
-                Triple(4, "game_4_name", "🍲"),
-                Triple(5, "game_5_name", "🌅"),
-                Triple(6, "game_6_name", "☕"),
-                Triple(7, "game_7_name", "👀"),
-                Triple(8, "game_8_name", "🔢"),
-                Triple(9, "game_9_name", "⭐"),
-                Triple(10, "game_10_name", "👨‍👩‍👧")
-            )
+            // Spotlight / Recommended Activity Card
+            val recommendedActivity = activities.firstOrNull { it.id == 1 } ?: activities.first()
+            item {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = BentoMemoriesBg,
+                    border = BorderStroke(2.dp, BentoMemoriesBorder),
+                    shadowElevation = 2.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            selectedActivityId = recommendedActivity.id
+                            viewModel.speakText(recommendedActivity.getQuestion(lang))
+                        }
+                        .testTag("recommended_activity_card")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(Color.White)
+                                .border(1.5.dp, BentoMemoriesBorder, RoundedCornerShape(18.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "✨", fontSize = 28.sp)
+                        }
 
-            items(gamesList.size) { idx ->
-                val (num, key, icon) = gamesList[idx]
-                val gameTitle = LocaleHelper.get(key, lang)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "🌟 " + LocaleHelper.get("recommended_today", lang).uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = BentoMemoriesText,
+                                    letterSpacing = 1.sp
+                                )
+                            )
+                            Text(
+                                text = LocaleHelper.get(recommendedActivity.titleKey, lang),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = BentoOnBackground,
+                                    fontSize = if (isLargeText) 20.sp else 17.sp
+                                )
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                selectedActivityId = recommendedActivity.id
+                                viewModel.speakText(recommendedActivity.getQuestion(lang))
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = BentoGreenAccent,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(
+                                text = LocaleHelper.get("tap_to_start", lang),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // All 10 Activities List
+            items(activities, key = { it.id }) { activity ->
+                val gameTitle = LocaleHelper.get(activity.titleKey, lang)
+                val isFavorite = favoriteIds.contains(activity.id)
+
                 Surface(
                     shape = RoundedCornerShape(24.dp),
                     color = Color.White,
@@ -154,11 +270,10 @@ fun PatientGamesScreen(
                         .fillMaxWidth()
                         .border(2.dp, BentoPlayBorder, RoundedCornerShape(24.dp))
                         .clickable {
-                            selectedGameIndex = num
-                            feedbackMessage = null
-                            viewModel.speakText(gameTitle)
+                            selectedActivityId = activity.id
+                            viewModel.speakText(activity.getQuestion(lang))
                         }
-                        .testTag("game_item_$num")
+                        .testTag("game_item_${activity.id}")
                 ) {
                     Row(
                         modifier = Modifier
@@ -167,19 +282,22 @@ fun PatientGamesScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        // Leading Activity Icon Box
                         Box(
                             modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(BentoPlayBg),
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(BentoPlayBg)
+                                .border(1.dp, BentoPlayBorder, RoundedCornerShape(18.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = icon, fontSize = 26.sp)
+                            Text(text = activity.iconEmoji, fontSize = 28.sp)
                         }
 
+                        // Title & Type
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "ACTIVITY $num",
+                                text = "ACTIVITY ${activity.id}",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Black,
                                     color = BentoPlayText,
@@ -196,112 +314,96 @@ fun PatientGamesScreen(
                             )
                         }
 
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Start",
-                            tint = BentoGreenAccent
-                        )
+                        // Favorite Heart Button
+                        IconButton(
+                            onClick = {
+                                if (isFavorite) {
+                                    favoriteIds.remove(activity.id)
+                                } else {
+                                    favoriteIds.add(activity.id)
+                                }
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) Color(0xFFE91E63) else BentoPlayText.copy(alpha = 0.5f)
+                            )
+                        }
+
+                        // Play Arrow
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(BentoGreenAccentLight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Start",
+                                tint = BentoGreenAccent,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             }
         } else {
-            // Active Game Interactive Screen
-            item {
-                ActiveGameViewer(
-                    gameIndex = selectedGameIndex!!,
-                    lang = lang,
-                    isLargeText = isLargeText,
-                    feedbackMessage = feedbackMessage,
-                    onOptionSelected = { isRight, promptText ->
-                        val encouraging = when (lang) {
-                            "hi" -> "बहुत सुंदर! चलिए साथ मिलकर देखते हैं।"
-                            "gu" -> "ખૂબ સુંદર! ચાલો સાથે મળીને જોઈએ."
-                            else -> "Wonderful! Let's explore together."
-                        }
-                        feedbackMessage = encouraging
-                        viewModel.speakText(encouraging)
-                    },
-                    onSpeak = { text -> viewModel.speakText(text) }
-                )
+            // Active Cognitive Activity View
+            val currentActivity = activities.firstOrNull { it.id == selectedActivityId }
+            if (currentActivity != null) {
+                item {
+                    ActiveCognitiveActivityViewer(
+                        activity = currentActivity,
+                        lang = lang,
+                        isLargeText = isLargeText,
+                        onActivityCompleted = {
+                            completedCount++
+                        },
+                        onNextActivity = {
+                            val nextId = if (currentActivity.id >= activities.size) 1 else currentActivity.id + 1
+                            selectedActivityId = nextId
+                            val nextAct = activities.firstOrNull { it.id == nextId }
+                            if (nextAct != null) {
+                                viewModel.speakText(nextAct.getQuestion(lang))
+                            }
+                        },
+                        onBackToDirectory = {
+                            selectedActivityId = null
+                        },
+                        onSpeak = { text -> viewModel.speakText(text) }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun ActiveGameViewer(
-    gameIndex: Int,
+fun ActiveCognitiveActivityViewer(
+    activity: CognitiveActivity,
     lang: String,
     isLargeText: Boolean,
-    feedbackMessage: String?,
-    onOptionSelected: (Boolean, String) -> Unit,
+    onActivityCompleted: () -> Unit,
+    onNextActivity: () -> Unit,
+    onBackToDirectory: () -> Unit,
     onSpeak: (String) -> Unit
 ) {
-    val prompt = when (gameIndex) {
-        1 -> when (lang) {
-            "hi" -> "इस कमल के फूल जैसा दूसरा फूल चुनें:"
-            "gu" -> "આ કમળના ફૂલ જેવું બીજું ફૂલ પસંદ કરો:"
-            else -> "Match the identical Lotus flower:"
-        }
-        2 -> when (lang) {
-            "hi" -> "इनमें से मीठा लाल सेब (Apple) कौन सा है?"
-            "gu" -> "આમાંથી મીઠું લાલ સફરજન કયું છે?"
-            else -> "Which one is the red sweet Apple?"
-        }
-        3 -> when (lang) {
-            "hi" -> "हरे रंग की चाय का कप छुएं:"
-            "gu" -> "લીલા રંગનો ચાનો કપ અડો:"
-            else -> "Tap the Green color teacup:"
-        }
-        4 -> when (lang) {
-            "hi" -> "इनमें से खाने की वस्तु कौन सी है?"
-            "gu" -> "આમાંથી ખાવાની વસ્તુ કઈ છે?"
-            else -> "Which item is delicious food?"
-        }
-        5 -> when (lang) {
-            "hi" -> "सुबह उठने के बाद हम क्या करते हैं?"
-            "gu" -> "સવારે જાગ્યા પછી આપણે શું કરીએ છીએ?"
-            else -> "What do we do in the morning first?"
-        }
-        6 -> when (lang) {
-            "hi" -> "समय देखने के लिए हम क्या देखते हैं?"
-            "gu" -> "સમય જોવા માટે આપણે શું જોઈએ છીએ?"
-            else -> "What do we use to see the time?"
-        }
-        7 -> when (lang) {
-            "hi" -> "इन 3 सुंदर चीजों को ध्यान से देखें: 🌸 🍵 📖"
-            "gu" -> "આ 3 સુંદર વસ્તુઓને જુઓ: 🌸 🍵 📖"
-            else -> "Look at these 3 items: Flower 🌸, Tea 🍵, Book 📖"
-        }
-        8 -> when (lang) {
-            "hi" -> "यहाँ कितने गेंदे के फूल हैं? 🌼 🌼 🌼"
-            "gu" -> "અહીં કેટલા ગલગોટાના ફૂલ છે? 🌼 🌼 🌼"
-            else -> "How many marigold flowers are here? 🌼 🌼 🌼"
-        }
-        9 -> when (lang) {
-            "hi" -> "चमकते सुनहरे सितारे को छुएं:"
-            "gu" -> "ચમકતા સોનેરી તારાને અડો:"
-            else -> "Tap the glowing golden Star:"
-        }
-        else -> when (lang) {
-            "hi" -> "आपकी प्यारी बेटी मीना का चित्र कौन सा है?"
-            "gu" -> "તમારી વહાલી દીકરી મીનાનો ફોટો કયો છે?"
-            else -> "Which photo is your daughter Meena?"
-        }
+    // Shuffled options per activity so option 0 is NEVER guaranteed to be the right answer!
+    val shuffledOptions = remember(activity.id) { activity.options.shuffled() }
+
+    var selectedOptionId by remember(activity.id) { mutableStateOf<String?>(null) }
+    var feedbackMessage by remember(activity.id) { mutableStateOf<String?>(null) }
+    var isCelebration by remember(activity.id) { mutableStateOf(false) }
+
+    // Special state for 3-item memory recall stage
+    var hasRevealedMemory by remember(activity.id) {
+        mutableStateOf(activity.type != ActivityType.MEMORY_RECALL_3_ITEMS)
     }
 
-    val options = when (gameIndex) {
-        1 -> listOf("🌸 Lotus", "🌻 Sunflower", "🌹 Rose")
-        2 -> listOf("🍎 Apple", "🥕 Carrot", "🥥 Coconut")
-        3 -> listOf("🟢 Green Tea", "🔴 Red Bowl", "🔵 Blue Mug")
-        4 -> listOf("🍛 Dal Rotli", "👗 Bandhani Saree", "🪑 Wooden Chair")
-        5 -> listOf("🪥 Brush & Tea", "🌙 Go to Sleep", "🚶 Evening Walk")
-        6 -> listOf("⏰ Wall Clock", "👓 Reading Glasses", "📻 Old Radio")
-        7 -> listOf("🍵 Warm Tea", "🚗 Red Car", "✈️ Aeroplane")
-        8 -> listOf("3 Flowers", "5 Flowers", "1 Flower")
-        9 -> listOf("⭐ Star", "🔷 Diamond", "⭕ Circle")
-        else -> listOf("👩 Meena (Daughter)", "👨 Raj (Son)", "👧 Pooja (Granddaughter)")
-    }
+    val questionText = activity.getQuestion(lang)
 
     Surface(
         shape = RoundedCornerShape(28.dp),
@@ -315,95 +417,437 @@ fun ActiveGameViewer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            // Header Info Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "ACTIVITY $gameIndex",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = BentoPlayText,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = BentoPlayBg,
+                    border = BorderStroke(1.dp, BentoPlayBorder)
+                ) {
+                    Text(
+                        text = "ACTIVITY ${activity.id} • ${LocaleHelper.get(activity.titleKey, lang)}",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = BentoPlayText,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.5.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     )
-                )
+                }
 
                 IconButton(
-                    onClick = { onSpeak(prompt) },
+                    onClick = { onSpeak(questionText) },
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(BentoPlayBg)
+                        .border(1.dp, BentoPlayBorder, RoundedCornerShape(14.dp))
                 ) {
-                    Text(text = "🔊", fontSize = 18.sp)
+                    Text(text = "🔊", fontSize = 20.sp)
                 }
             }
 
+            // Question Prompt
             Text(
-                text = prompt,
+                text = questionText,
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Black,
                     fontSize = if (isLargeText) 24.sp else 20.sp,
-                    color = BentoOnBackground
+                    color = BentoOnBackground,
+                    lineHeight = if (isLargeText) 32.sp else 28.sp
                 )
             )
 
-            // Options Buttons (Large touch targets)
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                options.forEachIndexed { i, opt ->
-                    Button(
-                        onClick = { onOptionSelected(i == 0, opt) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = BentoPlayBg,
-                            contentColor = BentoPlayText
-                        ),
-                        shape = RoundedCornerShape(18.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .border(1.5.dp, BentoPlayBorder, RoundedCornerShape(18.dp))
-                            .testTag("game_option_$i")
-                    ) {
-                        Text(
-                            text = opt,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Black,
-                                fontSize = if (isLargeText) 20.sp else 18.sp
-                            )
+            // Stage 1 for 3-Item Recall: Observation Tray
+            if (activity.type == ActivityType.MEMORY_RECALL_3_ITEMS && !hasRevealedMemory) {
+                MemoryObservationTray(
+                    items = activity.observationItems,
+                    lang = lang,
+                    isLargeText = isLargeText,
+                    onReady = {
+                        hasRevealedMemory = true
+                        val prompt = LocaleHelper.get("what_did_you_see", lang)
+                        onSpeak(prompt)
+                    }
+                )
+            } else {
+                // Visual Hero Focus Frame (if applicable)
+                if (activity.targetHeroEmoji != null) {
+                    HeroTargetFrame(
+                        activity = activity,
+                        lang = lang,
+                        isLargeText = isLargeText
+                    )
+                }
+
+                // Options List (Shuffled & Large Interactive Surfaces)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    shuffledOptions.forEachIndexed { index, option ->
+                        val isChosen = selectedOptionId == option.id
+                        val isCorrectOption = option.isCorrect || activity.isReminiscence
+
+                        ActivityOptionCard(
+                            option = option,
+                            index = index,
+                            lang = lang,
+                            isLargeText = isLargeText,
+                            isSelected = isChosen,
+                            isAnswered = selectedOptionId != null,
+                            onClick = {
+                                selectedOptionId = option.id
+
+                                if (activity.isReminiscence) {
+                                    val affirmation = when (lang) {
+                                        "hi" -> "बहुत ही सुंदर और शांतिदायक पसंद! 🕊️"
+                                        "gu" -> "ખૂબ જ સુંદર અને શાંતિપૂર્ણ પસંદગી! 🕊️"
+                                        else -> "A wonderfully peaceful choice! 🕊️"
+                                    }
+                                    feedbackMessage = affirmation
+                                    isCelebration = true
+                                    onSpeak(affirmation)
+                                    onActivityCompleted()
+                                } else if (option.isCorrect) {
+                                    val successMsg = when (lang) {
+                                        "hi" -> "बहुत सुंदर! आपने बिल्कुल सही पहचाना! 🌸"
+                                        "gu" -> "ખૂબ સરસ! તમે બરાબર ઓળખી લીધું! 🌸"
+                                        else -> "Wonderful! You found it! 🌸"
+                                    }
+                                    feedbackMessage = successMsg
+                                    isCelebration = true
+                                    onSpeak(successMsg)
+                                    onActivityCompleted()
+                                } else {
+                                    val correctOpt = shuffledOptions.firstOrNull { it.isCorrect }
+                                    val guideMsg = when (lang) {
+                                        "hi" -> "अच्छा प्रयास! चलिए साथ मिलकर देखते हैं — ${correctOpt?.emoji ?: ""} ${correctOpt?.getText(lang) ?: ""} को छुएं!"
+                                        "gu" -> "સરસ પ્રયાસ! ચાલો સાથે મળીને જોઈએ — ${correctOpt?.emoji ?: ""} ${correctOpt?.getText(lang) ?: ""} ને અડો!"
+                                        else -> "Good try! Let's look together — tap ${correctOpt?.emoji ?: ""} ${correctOpt?.getText(lang) ?: ""}!"
+                                    }
+                                    feedbackMessage = guideMsg
+                                    isCelebration = false
+                                    onSpeak(guideMsg)
+                                }
+                            }
                         )
                     }
                 }
             }
 
-            // Gentle Positive Feedback Banner
+            // Always-Positive Feedback Banner
             if (feedbackMessage != null) {
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = BentoMoodBg,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(2.dp, BentoMoodBorder, RoundedCornerShape(18.dp))
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isCelebration) BentoMoodBg else BentoTodayBg,
+                    border = BorderStroke(2.dp, if (isCelebration) BentoMoodBorder else BentoTodayBorder),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
+                            .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(text = "✨", fontSize = 24.sp)
                         Text(
-                            text = feedbackMessage,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = BentoMoodText,
-                                fontWeight = FontWeight.Black
+                            text = if (isCelebration) "✨" else "🌿",
+                            fontSize = 28.sp
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isCelebration) LocaleHelper.get("well_done_title", lang) else "Together",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = if (isCelebration) BentoMoodText else BentoTodayText
+                                )
+                            )
+                            Text(
+                                text = feedbackMessage!!,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = if (isLargeText) 18.sp else 16.sp,
+                                    color = if (isCelebration) BentoMoodText else BentoTodayText
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom Flow Buttons (Next Activity & Directory)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = onNextActivity,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BentoGreenAccent,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .testTag("btn_next_activity")
+                ) {
+                    Text(
+                        text = "▶ " + LocaleHelper.get("next_activity", lang),
+                        fontWeight = FontWeight.Black,
+                        fontSize = if (isLargeText) 17.sp else 15.sp
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onBackToDirectory,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.5.dp, BentoPlayBorder),
+                    modifier = Modifier
+                        .height(52.dp)
+                        .testTag("btn_all_activities")
+                ) {
+                    Text(
+                        text = LocaleHelper.get("all_activities", lang),
+                        fontWeight = FontWeight.Bold,
+                        color = BentoPlayText,
+                        fontSize = if (isLargeText) 16.sp else 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MemoryObservationTray(
+    items: List<ActivityOption>,
+    lang: String,
+    isLargeText: Boolean,
+    onReady: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        color = BentoMemoriesBg,
+        border = BorderStroke(2.dp, BentoMemoriesBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(
+                text = "🪔 Puja Tray Observation",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Black,
+                    color = BentoMemoriesText
+                )
+            )
+
+            // 3 Observation Items Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                items.forEach { item ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White)
+                            .border(1.5.dp, BentoMemoriesBorder, RoundedCornerShape(16.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
+                    ) {
+                        Text(text = item.emoji, fontSize = 36.sp)
+                        Text(
+                            text = item.getText(lang),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = BentoOnBackground,
+                                fontSize = if (isLargeText) 15.sp else 13.sp
                             )
                         )
                     }
                 }
+            }
+
+            Button(
+                onClick = onReady,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BentoGreenAccent,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .testTag("btn_memory_ready")
+            ) {
+                Text(
+                    text = LocaleHelper.get("i_remember_ready", lang),
+                    fontWeight = FontWeight.Black,
+                    fontSize = if (isLargeText) 18.sp else 15.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HeroTargetFrame(
+    activity: CognitiveActivity,
+    lang: String,
+    isLargeText: Boolean
+) {
+    val heroColor = if (activity.targetHeroColorHex != null) {
+        Color(activity.targetHeroColorHex)
+    } else {
+        BentoPlayBg
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(heroColor)
+            .border(2.dp, BentoPlayBorder, RoundedCornerShape(22.dp))
+            .padding(vertical = 18.dp, horizontal = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = activity.targetHeroEmoji ?: "✨",
+                fontSize = if (activity.type == ActivityType.COUNTING) 36.sp else 48.sp,
+                textAlign = TextAlign.Center
+            )
+
+            val label = activity.getTargetLabel(lang)
+            if (!label.isNullOrBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.9f)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            color = BentoOnBackground,
+                            fontSize = if (isLargeText) 17.sp else 14.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ActivityOptionCard(
+    option: ActivityOption,
+    index: Int,
+    lang: String,
+    isLargeText: Boolean,
+    isSelected: Boolean,
+    isAnswered: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = when {
+        isSelected && option.isCorrect -> BentoMoodBg
+        isSelected && !option.isCorrect -> BentoTodayBg
+        option.colorHex != null -> Color(option.colorHex)
+        else -> BentoPlayBg.copy(alpha = 0.6f)
+    }
+
+    val borderColor = when {
+        isSelected && option.isCorrect -> BentoMoodBorder
+        isSelected && !option.isCorrect -> BentoTodayBorder
+        else -> BentoPlayBorder
+    }
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = backgroundColor,
+        border = BorderStroke(2.dp, borderColor),
+        shadowElevation = if (isSelected) 4.dp else 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .testTag("game_option_$index")
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Visual Avatar: Photo or Large Emoji
+            if (!option.photoUri.isNullOrBlank()) {
+                AsyncImage(
+                    model = option.photoUri,
+                    contentDescription = option.getText(lang),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .border(1.5.dp, BentoPlayBorder, CircleShape)
+                )
+            } else if (option.emoji.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .border(1.dp, BentoPlayBorder, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = option.emoji, fontSize = 26.sp)
+                }
+            }
+
+            // Option Text & Subtitle
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = option.getText(lang),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = if (isLargeText) 20.sp else 17.sp,
+                        color = BentoOnBackground
+                    )
+                )
+                val sub = option.getSubtitle(lang)
+                if (sub.isNotBlank()) {
+                    Text(
+                        text = sub,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = BentoOnBackground.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = if (isLargeText) 14.sp else 12.sp
+                        )
+                    )
+                }
+            }
+
+            // Selection Indicator
+            if (isSelected) {
+                Text(
+                    text = if (option.isCorrect) "✓" else "•",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (option.isCorrect) BentoGreenAccent else BentoTodayText
+                )
             }
         }
     }
