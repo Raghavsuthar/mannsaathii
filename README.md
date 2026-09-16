@@ -120,6 +120,34 @@ When these secrets are present, GitHub Actions will automatically build both **`
 
 ---
 
+## 🛡️ Security Hardening & Reverse-Engineering Protections
+
+MannSaathi includes multi-layered code and runtime hardening designed to protect patient privacy and intellectual property from decompilation, cloning, and tampering:
+
+1. **R8 / ProGuard Code Obfuscation & Shrinking (`isMinifyEnabled = true`, `isShrinkResources = true`)**:
+   - Release builds undergo full bytecode shrinking, dead-code elimination, and identifier renaming.
+   - Classes, variables, and internal method names are shortened to cryptic single-letter tokens (`a`, `b`, `c`), making decompilation tools (JADX, APKTool, CFR) output nearly unreadable logic.
+   - Resource shrinking removes unused strings, layouts, and assets from the final release APK.
+   - Debug log statements (`android.util.Log.d`, `Log.v`) are stripped from release bytecode to prevent leaking sensitive patient health logs.
+   - Line number tables are preserved (`SourceFile,LineNumberTable`) while hiding real Kotlin filenames, enabling actionable crash stacktraces without exposing developer directory structures.
+
+2. **Manifest Hardening**:
+   - `android:allowBackup="false"`: Disables ADB and cloud backup vectors, preventing unauthorized extraction of private SQLite Room databases or cached patient photos without root.
+   - `android:installLocation="internalOnly"`: Prevents installing or moving the application to external SD cards where APKs or private files could be tampered with.
+   - `android:usesCleartextTraffic="false"`: Strictly enforces encrypted HTTPS transport across all network requests.
+   - `android:extractNativeLibs="false"`: Keeps native binaries packaged inside the APK.
+
+3. **Lightweight Runtime Integrity Checks (`SecurityHelper.kt`)**:
+   - Checks for signs of rooted environments (e.g. `/system/bin/su`, `/data/local/su`, `test-keys` build signatures).
+   - Detects attached debuggers (`Debug.isDebuggerConnected()`).
+   - Diagnoses emulator execution environments without obstructing legitimate accessibility or virtualized previews.
+   - Non-disruptive design: Avoids false-positive lockouts to guarantee uninterrupted care for elderly patients.
+
+4. **Security Limitations**:
+   - *Note on Client-Side Security*: 100% protection against determined reverse engineers on a client device is technically impossible. However, these industry-standard measures dramatically raise the reverse-engineering cost and barrier of entry, rendering automated cloning and low-effort decompilation ineffective.
+
+---
+
 ## 🛠️ Google AI Studio Notes
 - Built using **Jetpack Compose**, **Material Design 3**, **Room Database**, **Navigation Compose**, and **TTS**.
 - Secrets and API keys are managed through the Secrets panel in AI Studio via `.env` / `.env.example`.

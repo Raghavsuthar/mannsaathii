@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         MedicationNotificationHelper.createNotificationChannel(this)
+        com.example.util.SecurityHelper.evaluateEnvironment(applicationContext)
         handleNotificationIntent(intent)
 
         setContent {
