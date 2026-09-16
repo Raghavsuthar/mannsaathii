@@ -1,0 +1,125 @@
+name: Build and Release MannSaathi APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Environment and Secrets
+        run: |
+          # Ensure .env exists for the secrets-gradle-plugin
+          if [ ! -f .env ]; then
+            echo "Creating .env file from .env.example..."
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+          # If user provided a Gemini API Key secret in GitHub, inject it into .env
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "Injecting GEMINI_API_KEY from repository secrets..."
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          fi
+
+      - name: Setup Keystore
+        run: |
+          # 1. Setup debug keystore for debug builds
+          if [ -f debug.keystore.base64 ]; then
+            echo "Restoring debug.keystore from debug.keystore.base64..."
+            base64 -d debug.keystore.base64 > debug.keystore
+          elif [ ! -f debug.keystore ]; then
+            echo "Generating standard debug.keystore..."
+            keytool -genkey -v \
+              -keystore debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+          # 2. Setup release keystore if provided via GitHub Secrets
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "Decoding release keystore from secrets..."
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "${GITHUB_WORKSPACE}/my-upload-key.jks"
+            echo "HAVE_RELEASE_KEY=true" >> $GITHUB_ENV
+          else
+            echo "No release keystore secret found; skipping signed release build."
+            echo "HAVE_RELEASE_KEY=false" >> $GITHUB_ENV
+          fi
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Build Release APK (Optional)
+        if: env.HAVE_RELEASE_KEY == 'true'
+        env:
+          KEYSTORE_PATH: "${{ github.workspace }}/my-upload-key.jks"
+          STORE_PASSWORD: "${{ secrets.STORE_PASSWORD }}"
+          KEY_PASSWORD: "${{ secrets.KEY_PASSWORD }}"
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Organize APK Artifacts
+        run: |
+          mkdir -p release-apks
+          
+          # Copy debug APK with friendly name
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk release-apks/MannSaathi-debug.apk
+            echo "Found debug APK: release-apks/MannSaathi-debug.apk"
+          fi
+
+          # Copy release APK if built
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk release-apks/MannSaathi-release.apk
+            echo "Found release APK: release-apks/MannSaathi-release.apk"
+          fi
+
+      - name: Upload APKs as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MannSaathi-APKs
+          path: release-apks/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "MannSaathi Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-apks/*.apk
