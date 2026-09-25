@@ -1,5 +1,7 @@
 package com.example.ui.caregiver
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -27,6 +29,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.example.data.model.Memory
 import com.example.ui.theme.*
@@ -124,6 +127,26 @@ fun CaregiverMemoriesTab(
                 }
             }
             memoryForPhotoUpdate = null
+        }
+    }
+
+    // Camera needs an explicit runtime grant (TakePicturePreview has none
+    // of its own). Queue the intended launch until the grant arrives.
+    var pendingCameraLaunch by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) pendingCameraLaunch?.invoke()
+        pendingCameraLaunch = null
+    }
+    fun launchWithCameraPermission(action: () -> Unit) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            action()
+        } else {
+            pendingCameraLaunch = action
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -542,7 +565,7 @@ fun CaregiverMemoriesTab(
                     OutlinedButton(
                         onClick = {
                             showPhotoSourceSheet = false
-                            directCameraLauncher.launch(null)
+                            launchWithCameraPermission { directCameraLauncher.launch(null) }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -679,7 +702,7 @@ fun CaregiverMemoriesTab(
                                     Text("Gallery", style = MaterialTheme.typography.labelSmall)
                                 }
                                 OutlinedButton(
-                                    onClick = { dialogCameraLauncher.launch(null) },
+                                    onClick = { launchWithCameraPermission { dialogCameraLauncher.launch(null) } },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {

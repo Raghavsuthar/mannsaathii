@@ -42,9 +42,9 @@ fun PatientTodayScreen(
     val context = LocalContext.current
 
     val now = remember { Date() }
-    val timeFormatted = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now) }
-    val dayFormatted = remember { SimpleDateFormat("EEEE", Locale.getDefault()).format(now) }
-    val dateFormatted = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(now) }
+    val timeFormatted = remember(lang) { SimpleDateFormat("hh:mm a", LocaleHelper.localeFor(lang)).format(now) }
+    val dayFormatted = remember(lang) { SimpleDateFormat("EEEE", LocaleHelper.localeFor(lang)).format(now) }
+    val dateFormatted = remember(lang) { SimpleDateFormat("dd MMMM yyyy", LocaleHelper.localeFor(lang)).format(now) }
 
     val nextMed = uiState.medications.firstOrNull { it.status == MedicationStatus.PENDING }
     val nextRoutine = uiState.routines.firstOrNull { !it.isCompleted }

@@ -1,12 +1,15 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,12 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.R
 import com.example.data.model.AppLanguage
 import com.example.data.model.UserRole
 import com.example.ui.viewmodel.MainViewModel
@@ -411,6 +416,139 @@ fun SafeAiAssistantDialog(
                     text = "🔒 Safety Rule: MannSaathi only provides orientation from registered records and never diagnoses or advises medication changes.",
                     style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
+            }
+        }
+    }
+}
+
+/**
+ * First-run family setup. Pre-filled with demo identity; the caregiver
+ * replaces it with real names/phone/language. Completing exits demo mode
+ * (persisted); skipping keeps exploring on sample data.
+ */
+@Composable
+fun FamilySetupDialog(
+    uiState: UiState,
+    viewModel: MainViewModel
+) {
+    var name by remember { mutableStateOf(uiState.profile.name) }
+    var preferredName by remember { mutableStateOf(uiState.profile.preferredName) }
+    var caregiverName by remember { mutableStateOf(uiState.profile.caregiverName) }
+    var caregiverPhone by remember { mutableStateOf(uiState.profile.caregiverPhone) }
+    var language by remember { mutableStateOf(uiState.profile.language) }
+
+    Dialog(onDismissRequest = { viewModel.dismissSetupDialog() }) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("family_setup_dialog")
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(22.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.mannsaathi_logo),
+                        contentDescription = "MannSaathi",
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                    )
+                    Text(
+                        text = "Welcome to MannSaathi",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
+                    )
+                    Text(
+                        text = "Add your family's real details, or skip to keep exploring the demo.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                }
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Elder's full name") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = preferredName,
+                    onValueChange = { preferredName = it },
+                    label = { Text("Loving nickname (e.g. Ba)") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = caregiverName,
+                    onValueChange = { caregiverName = it },
+                    label = { Text("Caregiver name") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = caregiverPhone,
+                    onValueChange = { caregiverPhone = it },
+                    label = { Text("Caregiver phone") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Text(
+                    text = "App language",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AppLanguage.values().forEach { option ->
+                        FilterChip(
+                            selected = language == option.code,
+                            onClick = { language = option.code },
+                            label = { Text(option.nativeName) },
+                            modifier = Modifier.testTag("setup_lang_${option.code}")
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.completeSetup(name, preferredName, caregiverName, caregiverPhone, language)
+                    },
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .testTag("setup_complete_button")
+                ) {
+                    Text("Save & Start", fontWeight = FontWeight.Bold)
+                }
+                TextButton(
+                    onClick = { viewModel.dismissSetupDialog() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("setup_skip_button")
+                ) {
+                    Text("Skip — explore demo")
+                }
             }
         }
     }

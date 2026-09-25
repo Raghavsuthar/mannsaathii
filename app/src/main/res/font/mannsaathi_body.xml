@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Latin base: Noto Sans (ships inside Noto Sans Gujarati package) -->
+    <font
+        android:font="@font/noto_sans_latin_500"
+        android:fontStyle="normal"
+        android:fontWeight="500" />
+    <font
+        android:font="@font/noto_sans_latin_700"
+        android:fontStyle="normal"
+        android:fontWeight="700" />
+    <!-- Gujarati script -->
+    <font
+        android:font="@font/noto_sans_gujarati_500"
+        android:fontStyle="normal"
+        android:fontWeight="500" />
+    <font
+        android:font="@font/noto_sans_gujarati_700"
+        android:fontStyle="normal"
+        android:fontWeight="700" />
+    <!-- Devanagari script -->
+    <font
+        android:font="@font/noto_sans_devanagari_500"
+        android:fontStyle="normal"
+        android:fontWeight="500" />
+    <font
+        android:font="@font/noto_sans_devanagari_700"
+        android:fontStyle="normal"
+        android:fontWeight="700" />
+</font-family>

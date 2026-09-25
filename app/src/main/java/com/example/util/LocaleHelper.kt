@@ -460,4 +460,17 @@ object LocaleHelper {
         "export_report" to "રિપોર્ટ સારાંશ",
         "clinical_disclaimer" to "માત્ર ક્લિનિકલ સમીક્ષા માટે. દર્દી અને સંભાળકર્તા દ્વારા નોંધાયેલ દિનચર્યા ડેટા."
     )
+
+    /**
+     * Locale matching the app language code. All user-visible dates and times
+     * must be formatted with this — never the device default — so the display
+     * language always agrees with the selected app language.
+     */
+    fun localeFor(lang: String): java.util.Locale {
+        return when (lang.lowercase()) {
+            "hi" -> java.util.Locale("hi", "IN")
+            "gu" -> java.util.Locale("gu", "IN")
+            else -> java.util.Locale.ENGLISH
+        }
+    }
 }

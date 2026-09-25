@@ -56,6 +56,7 @@ data class UiState(
     val showLanguageDialog: Boolean = false,
     val showAiAssistant: Boolean = false,
     val showDisclaimerDialog: Boolean = false,
+    val showSetupDialog: Boolean = false,
     val targetRoleForPin: UserRole? = null,
     val toastMessage: String? = null
 )
@@ -64,8 +65,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: MannSaathiRepository
     private val ttsHelper: TtsHelper = TtsHelper(application)
 
-    private val _uiState = MutableStateFlow(UiState())
+    private val _uiState = MutableStateFlow(UiState(showSetupDialog = true))
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+    // Last medication list applied to WorkManager. Diffed on every emission
+    // so only new/changed/removed doses touch the schedule.
+    private var lastSyncedMeds: List<Medication> = emptyList()
 
     init {
         val db = AppDatabase.getDatabase(application)
@@ -104,7 +109,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.medications.collect { meds ->
                 _uiState.update { it.copy(medications = meds) }
-                MedicationScheduler.rescheduleAll(getApplication(), meds)
+                // Scoped sync: only new/changed/removed doses reschedule.
+                lastSyncedMeds = MedicationScheduler.syncReminders(
+                    getApplication(),
+                    lastSyncedMeds,
+                    meds,
+                    _uiState.value.profile.language
+                )
             }
         }
 
@@ -210,8 +221,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // TTS & Voice
+    // TTS & Voice (respects the Voice Guidance toggle in Settings)
     fun speakText(text: String) {
+        if (!_uiState.value.profile.voiceAssistanceEnabled) return
         val lang = _uiState.value.profile.language
         val speed = _uiState.value.profile.speechSpeed
         ttsHelper.speak(text, lang, speed)
@@ -250,6 +262,58 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             speakText(msg)
         }
+    }
+
+    fun setVoiceAssistanceEnabled(enabled: Boolean) {
+        val current = _uiState.value.profile
+        if (current.voiceAssistanceEnabled == enabled) return
+        updateProfile(current.copy(voiceAssistanceEnabled = enabled))
+        if (enabled) {
+            val msg = when (current.language) {
+                "hi" -> "आवाज़ सहायता चालू है।"
+                "gu" -> "અવાજ સહાય ચાલુ છે."
+                else -> "Voice guidance is on."
+            }
+            // Bypass the gate once so enabling always confirms audibly.
+            ttsHelper.speak(msg, current.language, current.speechSpeed)
+        } else {
+            ttsHelper.stop()
+        }
+    }
+
+    fun dismissSetupDialog() {
+        _uiState.update { it.copy(showSetupDialog = false) }
+    }
+
+    /**
+     * First-run family setup: replaces demo identity with the real patient
+     * and caregiver, keeps the seeded routines/meds, and exits demo mode.
+     */
+    fun completeSetup(
+        name: String,
+        preferredName: String,
+        caregiverName: String,
+        caregiverPhone: String,
+        language: String
+    ) {
+        val current = _uiState.value.profile
+        updateProfile(
+            current.copy(
+                name = name.ifBlank { current.name },
+                preferredName = preferredName.ifBlank { current.preferredName },
+                caregiverName = caregiverName.ifBlank { current.caregiverName },
+                caregiverPhone = caregiverPhone.ifBlank { current.caregiverPhone },
+                language = language,
+                isDemoMode = false
+            )
+        )
+        _uiState.update { it.copy(showSetupDialog = false) }
+        val msg = when (language) {
+            "hi" -> "स्वागत है! सेटअप पूरा हो गया है।"
+            "gu" -> "સ્વાગત છે! સેટઅપ પૂરું થયું છે."
+            else -> "Welcome! Setup is complete."
+        }
+        ttsHelper.speak(msg, language, current.speechSpeed)
     }
 
     // Routines
@@ -292,10 +356,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Medications
     fun markMedicationTaken(med: Medication) {
         viewModelScope.launch {
-            val timeStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
+            val lang = _uiState.value.profile.language
+            val timeStr = SimpleDateFormat("hh:mm a", LocaleHelper.localeFor(lang)).format(Date())
             repository.updateMedicationStatus(med.id, MedicationStatus.TAKEN, timeStr)
             MedicationScheduler.cancelMedicationReminder(getApplication(), med.id)
-            val lang = _uiState.value.profile.language
             val msg = when (lang) {
                 "hi" -> "बहुत अच्छा! आपकी दवाई का समय पूरा हुआ।"
                 "gu" -> "ખૂબ સરસ! તમે દવા લઈ લીધી છે."
@@ -308,8 +372,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun markMedicationLater(med: Medication) {
         viewModelScope.launch {
             repository.updateMedicationStatus(med.id, MedicationStatus.DELAYED, null)
-            MedicationScheduler.scheduleSnoozeReminder(getApplication(), med, delayMinutes = 10)
             val lang = _uiState.value.profile.language
+            MedicationScheduler.scheduleSnoozeReminder(getApplication(), med, lang, delayMinutes = 10)
             val msg = when (lang) {
                 "hi" -> "ठीक है, हम थोड़ी देर में दोबारा याद दिलाएंगे।"
                 "gu" -> "સારું, અમે થોડીવારમાં ફરી યાદ કરાવીશું."
@@ -323,7 +387,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val medId = repository.saveMedication(med)
             val updatedMed = if (med.id == 0L) med.copy(id = medId) else med
-            MedicationScheduler.scheduleMedicationReminder(getApplication(), updatedMed)
+            MedicationScheduler.scheduleMedicationReminder(
+                getApplication(),
+                updatedMed,
+                _uiState.value.profile.language
+            )
         }
     }
 
@@ -335,7 +403,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun triggerTestMedicationReminder(med: Medication) {
-        MedicationScheduler.scheduleTestReminder(getApplication(), med, delaySeconds = 2)
+        MedicationScheduler.scheduleTestReminder(
+            getApplication(),
+            med,
+            _uiState.value.profile.language,
+            delaySeconds = 2
+        )
     }
 
     // Appointments
@@ -368,9 +441,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Mood
     fun recordMood(type: MoodType) {
         viewModelScope.launch {
+            val lang = _uiState.value.profile.language
             val now = Date()
-            val dateStr = SimpleDateFormat("dd MMM", Locale.getDefault()).format(now)
-            val timeStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now)
+            val dateStr = SimpleDateFormat("dd MMM", LocaleHelper.localeFor(lang)).format(now)
+            val timeStr = SimpleDateFormat("hh:mm a", LocaleHelper.localeFor(lang)).format(now)
             val entry = MoodEntry(
                 timestamp = System.currentTimeMillis(),
                 dateFormatted = dateStr,
@@ -381,7 +455,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             repository.addMoodEntry(entry)
             
-            val lang = _uiState.value.profile.language
             val msg = when (lang) {
                 "hi" -> "धन्यवाद। आपकी स्थिति दर्ज हो गई है।"
                 "gu" -> "આભાર. તમારી સ્થિતિ નોંધાઈ ગઈ છે."
@@ -403,7 +476,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Caregiver Notes
     fun addCaregiverNote(title: String, content: String, category: String) {
         viewModelScope.launch {
-            val dateStr = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
+            val lang = _uiState.value.profile.language
+            val dateStr = SimpleDateFormat("dd MMM yyyy", LocaleHelper.localeFor(lang)).format(Date())
             val note = CaregiverNote(
                 dateFormatted = dateStr,
                 title = title,

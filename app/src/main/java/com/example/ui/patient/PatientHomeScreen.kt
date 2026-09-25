@@ -44,11 +44,12 @@ fun PatientHomeScreen(
     val isLargeText = uiState.profile.largeTextMode
 
     val now = remember { Date() }
-    val timeFormatted = remember { SimpleDateFormat("HH:mm", Locale.getDefault()).format(now) }
-    val timeDisplay12h = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now) }
+    // Clocks render from timeDisplay12h in the patient's own language,
+    // never the device default.
+    val timeDisplay12h = remember(lang) { SimpleDateFormat("hh:mm a", LocaleHelper.localeFor(lang)).format(now) }
     val dayFormatted = remember { SimpleDateFormat("EEEE, dd MMM", Locale.ENGLISH).format(now) }
-    val dayRegional = remember { SimpleDateFormat("EEEE", Locale.getDefault()).format(now) }
-    val dateRegional = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(now) }
+    val dayRegional = remember(lang) { SimpleDateFormat("EEEE", LocaleHelper.localeFor(lang)).format(now) }
+    val dateRegional = remember(lang) { SimpleDateFormat("dd MMMM yyyy", LocaleHelper.localeFor(lang)).format(now) }
 
     val calendar = remember { Calendar.getInstance() }
     val hourOfDay = remember { calendar.get(Calendar.HOUR_OF_DAY) }

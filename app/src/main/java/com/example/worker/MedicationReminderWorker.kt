@@ -54,6 +54,16 @@ class MedicationReminderWorker(
             instructions = instructions
         )
 
+        // Chain tomorrow's dose. Snooze/test runs carry KEY_REPEATING=false
+        // and stop here so they never turn into daily reminders.
+        if (inputData.getBoolean(MedicationScheduler.KEY_REPEATING, true)) {
+            try {
+                MedicationScheduler.scheduleNextDay(applicationContext, inputData)
+            } catch (e: Exception) {
+                // Chaining is best-effort; today's notification already fired.
+            }
+        }
+
         return Result.success()
     }
 }

@@ -1,5 +1,6 @@
 package com.example.ui.caregiver
 
+import android.content.Intent
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -34,6 +35,7 @@ import com.example.ui.theme.*
 import com.example.ui.viewmodel.CaregiverTab
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.viewmodel.UiState
+import com.example.util.ExportHelper
 import com.example.util.LocaleHelper
 import com.example.util.PhotoStorageHelper
 import java.text.SimpleDateFormat
@@ -1693,7 +1695,64 @@ fun CaregiverSettingsTab(uiState: UiState, viewModel: MainViewModel) {
                             onCheckedChange = { viewModel.togglePictureMode() }
                         )
                     }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Voice Guidance (TTS)")
+                            Text(
+                                text = "Spoken prompts for every card and reminder",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                        Switch(
+                            checked = uiState.profile.voiceAssistanceEnabled,
+                            onCheckedChange = { viewModel.setVoiceAssistanceEnabled(it) },
+                            modifier = Modifier.testTag("switch_voice_guidance")
+                        )
+                    }
                 }
+            }
+        }
+
+        // Share Care Summary (offline export for family / doctor visits)
+        item {
+            val shareContext = LocalContext.current
+            Button(
+                onClick = {
+                    val summary = ExportHelper.buildCareSummary(
+                        profile = uiState.profile,
+                        medications = uiState.medications,
+                        routines = uiState.routines,
+                        moods = uiState.moodEntries,
+                        appointments = uiState.appointments,
+                        notes = uiState.caregiverNotes
+                    )
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, "MannSaathi Care Summary — ${uiState.profile.name}")
+                        putExtra(Intent.EXTRA_TEXT, summary)
+                    }
+                    shareContext.startActivity(Intent.createChooser(sendIntent, "Share care summary"))
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .testTag("btn_share_summary")
+            ) {
+                Icon(Icons.Default.Share, contentDescription = "Share")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Share Care Summary (Doctor / Family)", fontWeight = FontWeight.Bold)
             }
         }
 
