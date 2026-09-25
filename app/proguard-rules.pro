@@ -96,3 +96,37 @@
 -keep class com.example.BuildConfig {
     public static final java.lang.String *;
 }
+
+# ------------------------------------------------------------------------------
+# 8. WorkManager (Medication & Routine Background Schedulers)
+# ------------------------------------------------------------------------------
+-keep class * extends androidx.work.ListenableWorker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
+-keep class * extends androidx.work.Worker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
+-keep class com.example.worker.** { *; }
+
+# ------------------------------------------------------------------------------
+# 9. Networking & JSON Serialization (Retrofit, Moshi, OkHttp)
+# ------------------------------------------------------------------------------
+-keep @com.squareup.moshi.JsonQualifier interface * { *; }
+-keepclassmembers class * {
+    @com.squareup.moshi.Json <fields>;
+}
+-keep class * extends com.squareup.moshi.JsonAdapter { *; }
+-dontwarn com.squareup.moshi.**
+-dontwarn retrofit2.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+
+# ------------------------------------------------------------------------------
+# 10. Firebase & Google Services
+# ------------------------------------------------------------------------------
+-dontwarn com.google.firebase.**
+-keep class com.google.firebase.** { *; }
+

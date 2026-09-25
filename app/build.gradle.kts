@@ -42,10 +42,18 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
+      // Enable R8 code shrinking and bytecode obfuscation
       isMinifyEnabled = true
+      // Enable unused resource stripping to reduce APK footprint and remove unreferenced assets
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      // Production signing via environment variables; falls back to debugConfig for local testing
+      val releaseKeystore = file(System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks")
+      if (releaseKeystore.exists() && !System.getenv("STORE_PASSWORD").isNullOrEmpty()) {
+        signingConfig = signingConfigs.getByName("release")
+      } else {
+        signingConfig = signingConfigs.getByName("debugConfig")
+      }
     }
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }

@@ -140,10 +140,17 @@ MannSaathi includes multi-layered code and runtime hardening designed to protect
 3. **Lightweight Runtime Integrity Checks (`SecurityHelper.kt`)**:
    - Checks for signs of rooted environments (e.g. `/system/bin/su`, `/data/local/su`, `test-keys` build signatures).
    - Detects attached debuggers (`Debug.isDebuggerConnected()`).
+   - Flags debuggable build variants in production.
+   - Computes SHA-256 certificate fingerprints and installer package origins to detect repacked/tampered APKs.
    - Diagnoses emulator execution environments without obstructing legitimate accessibility or virtualized previews.
    - Non-disruptive design: Avoids false-positive lockouts to guarantee uninterrupted care for elderly patients.
 
-4. **Security Limitations**:
+4. **Testing Release Obfuscation Locally**:
+   - Build a release APK with R8 obfuscation: `./gradlew :app:assembleRelease`
+   - Inspect the mapping output in `app/build/outputs/mapping/release/mapping.txt` to verify class and method obfuscation.
+   - Analyze the APK with Android Studio APK Analyzer or `jadx` to confirm that business logic, models, and DAOs are properly obfuscated without breaking Room or Compose runtime.
+
+5. **Security Limitations**:
    - *Note on Client-Side Security*: 100% protection against determined reverse engineers on a client device is technically impossible. However, these industry-standard measures dramatically raise the reverse-engineering cost and barrier of entry, rendering automated cloning and low-effort decompilation ineffective.
 
 ---
