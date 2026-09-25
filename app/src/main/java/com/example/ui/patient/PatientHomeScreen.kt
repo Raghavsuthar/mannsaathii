@@ -50,9 +50,48 @@ fun PatientHomeScreen(
     val dayRegional = remember { SimpleDateFormat("EEEE", Locale.getDefault()).format(now) }
     val dateRegional = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(now) }
 
-    // Next upcoming action
-    val nextMed = uiState.medications.firstOrNull { it.status == MedicationStatus.PENDING }
-    val nextRoutine = uiState.routines.firstOrNull { !it.isCompleted }
+    val calendar = remember { Calendar.getInstance() }
+    val hourOfDay = remember { calendar.get(Calendar.HOUR_OF_DAY) }
+    val greetingEn = remember(hourOfDay) {
+        when (hourOfDay) {
+            in 5..11 -> "Good Morning"
+            in 12..16 -> "Good Afternoon"
+            in 17..21 -> "Good Evening"
+            else -> "Good Night"
+        }
+    }
+    val greetingRegional = remember(lang, hourOfDay) {
+        when (lang) {
+            "hi" -> when (hourOfDay) {
+                in 5..11 -> "शुभ प्रभात"
+                in 12..16 -> "शुभ दोपहर"
+                in 17..21 -> "शुभ संध्या"
+                else -> "शुभ रात्रि"
+            }
+            "gu" -> when (hourOfDay) {
+                in 5..11 -> "શુભ સવાર"
+                in 12..16 -> "શુભ બપોર"
+                in 17..21 -> "શુભ સાંજ"
+                else -> "શુભ રાત્રિ"
+            }
+            else -> greetingEn
+        }
+    }
+    val greetingWord = remember(lang) {
+        when (lang) {
+            "hi" -> "नमस्ते,"
+            "gu" -> "નમસ્તે,"
+            else -> "Namaste,"
+        }
+    }
+    val nextUpLabel = remember(lang) {
+        when (lang) {
+            "hi" -> "आगे • NEXT UP"
+            "gu" -> "હવે પછી • NEXT UP"
+            else -> "NEXT UP • હવે પછી"
+        }
+    }
+    val nextTimeChip = nextMed?.time ?: nextRoutine?.time ?: "--:--"
 
     val nextActionText = when {
         nextMed != null -> "${nextMed.name} at ${nextMed.time}"
@@ -94,7 +133,7 @@ fun PatientHomeScreen(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Bento Header Section
+        // 1. Bento Header Section — Stitch p1 orientation banner
         item(span = { GridItemSpan(2) }) {
             Surface(
                 shape = RoundedCornerShape(36.dp),
@@ -102,7 +141,7 @@ fun PatientHomeScreen(
                 shadowElevation = 2.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, BentoHeaderBorder, RoundedCornerShape(36.dp))
+                    .border(2.dp, BentoHeaderBorder, RoundedCornerShape(36.dp))
                     .clickable {
                         val spokenOrientation = when (lang) {
                             "hi" -> "नमस्ते ${uiState.profile.preferredName}! आज $dayRegional, $dateRegional है। समय $timeDisplay12h है। आप ${uiState.profile.city} में हैं।"
@@ -124,23 +163,48 @@ fun PatientHomeScreen(
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Left: Date Tag & Greeting
+                        // Left: Date pill + multilingual greeting
                         Column(modifier = Modifier.weight(1f)) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.White.copy(alpha = 0.85f),
+                                shadowElevation = 1.dp,
+                                modifier = Modifier.wrapContentWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(BentoGreenAccent)
+                                    )
+                                    Text(
+                                        text = dayFormatted.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Black,
+                                            color = BentoGreenAccent,
+                                            letterSpacing = 1.2.sp,
+                                            fontSize = 11.sp
+                                        )
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = dayFormatted.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(
+                                text = greetingWord,
+                                style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Black,
                                     color = BentoGreenAccent,
-                                    letterSpacing = 1.5.sp
+                                    fontSize = if (isLargeText) 30.sp else 26.sp,
+                                    lineHeight = if (isLargeText) 34.sp else 30.sp
                                 )
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = when (lang) {
-                                    "hi" -> "नमस्ते,\n${uiState.profile.name}"
-                                    "gu" -> "નમસ્તે,\n${uiState.profile.name}"
-                                    else -> "Namaste,\n${uiState.profile.name}"
-                                },
+                                text = uiState.profile.name,
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Black,
                                     color = BentoOnBackground,
@@ -148,17 +212,26 @@ fun PatientHomeScreen(
                                     fontSize = if (isLargeText) 28.sp else 24.sp
                                 )
                             )
+                            Text(
+                                text = "$greetingRegional • $greetingEn",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = BentoOnBackground.copy(alpha = 0.65f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp
+                                ),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
                         }
 
-                        // Right: Speaker & Clock
+                        // Right: circular speaker + clock + city
                         Column(
                             horizontalAlignment = Alignment.End,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Surface(
-                                shape = RoundedCornerShape(18.dp),
+                                shape = CircleShape,
                                 color = Color.White,
-                                shadowElevation = 2.dp,
+                                shadowElevation = 3.dp,
                                 modifier = Modifier
                                     .size(52.dp)
                                     .clickable {
@@ -171,69 +244,99 @@ fun PatientHomeScreen(
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text(text = "🔊", fontSize = 26.sp)
+                                    Text(text = "🔊", fontSize = 24.sp)
                                 }
                             }
 
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = timeFormatted,
-                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                    text = timeDisplay12h,
+                                    style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Black,
-                                        color = BentoOnBackground
+                                        color = BentoOnBackground,
+                                        fontSize = 20.sp
                                     )
                                 )
-                                Text(
-                                    text = uiState.profile.city,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = BentoOnBackground.copy(alpha = 0.6f),
-                                        fontWeight = FontWeight.SemiBold
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(text = "📍", fontSize = 12.sp)
+                                    Text(
+                                        text = uiState.profile.city,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = BentoOnBackground.copy(alpha = 0.65f),
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 12.sp
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
                     }
 
-                    // Next Up Glass Card
+                    // Bottom pill: Next-up medication cue with time chip
                     Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.White.copy(alpha = 0.65f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.9f)),
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.92f),
+                        shadowElevation = 1.dp,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                                .padding(horizontal = 12.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(BentoGreenAccent),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text(text = nextActionIcon, fontSize = 22.sp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(BentoGreenAccentLight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = nextActionIcon, fontSize = 20.sp)
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = nextUpLabel,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Black,
+                                            color = BentoGreenAccent,
+                                            letterSpacing = 1.sp,
+                                            fontSize = 10.sp
+                                        )
+                                    )
+                                    Text(
+                                        text = nextActionText,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = BentoOnBackground,
+                                            fontSize = if (isLargeText) 17.sp else 15.sp
+                                        ),
+                                        maxLines = 1
+                                    )
+                                }
                             }
-
-                            Column(modifier = Modifier.weight(1f)) {
+                            Surface(
+                                shape = CircleShape,
+                                color = BentoGreenAccentLight,
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
                                 Text(
-                                    text = LocaleHelper.get("next_event", lang).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall.copy(
+                                    text = nextTimeChip,
+                                    style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Black,
                                         color = BentoGreenAccent,
-                                        letterSpacing = 1.sp
-                                    )
-                                )
-                                Text(
-                                    text = nextActionText,
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = BentoOnBackground,
-                                        fontSize = if (isLargeText) 18.sp else 15.sp
+                                        fontSize = 13.sp
                                     ),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                                     maxLines = 1
                                 )
                             }
@@ -432,8 +535,18 @@ fun PatientHomeScreen(
             )
         }
 
-        // 3. Giant Emergency HELP Footer Card
+        // 3. Giant Emergency HELP Footer Card — Stitch p1 SOS bar
         item(span = { GridItemSpan(2) }) {
+            // Outer glow pulse for SOS badge
+            val sosGlow by infiniteTransition.animateFloat(
+                initialValue = 0.25f,
+                targetValue = 0.55f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1200, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "SosGlow"
+            )
             Surface(
                 shape = RoundedCornerShape(36.dp),
                 color = BentoHelpRed,
@@ -442,8 +555,8 @@ fun PatientHomeScreen(
                     .fillMaxWidth()
                     .height(88.dp)
                     .border(
-                        width = 4.dp,
-                        color = BentoHelpRedDark,
+                        width = 3.dp,
+                        color = BentoHelpRedBorder,
                         shape = RoundedCornerShape(36.dp)
                     )
                     .clickable {
@@ -460,38 +573,56 @@ fun PatientHomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text(
-                            text = "HELP",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Black,
-                                color = Color.White,
-                                letterSpacing = 3.sp,
-                                fontSize = if (isLargeText) 32.sp else 28.sp
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(text = "🚨", fontSize = 26.sp)
+                            Text(
+                                text = "HELP",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White,
+                                    letterSpacing = 3.sp,
+                                    fontSize = if (isLargeText) 32.sp else 28.sp
+                                )
                             )
-                        )
+                        }
                         Text(
                             text = "મદદ / तुरंत सहायता",
-                            style = MaterialTheme.typography.labelSmall.copy(
+                            style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.8f)
+                                color = Color.White.copy(alpha = 0.95f),
+                                fontSize = 14.sp
                             )
                         )
                     }
 
                     Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .scale(pulseScale)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.25f)),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(64.dp)
                     ) {
-                        Text(text = "🆘", fontSize = 30.sp)
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .scale(pulseScale)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = sosGlow))
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(54.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "🆘", fontSize = 30.sp)
+                        }
                     }
                 }
             }
@@ -596,15 +727,26 @@ fun BentoGridCard(
     testTag: String,
     onClick: () -> Unit
 ) {
+    // Gentle bounce for the pending-dose badge (Stitch p1 red dot)
+    val badgePulse = rememberInfiniteTransition(label = "BadgePulse")
+    val badgeScale by badgePulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "BadgeScale"
+    )
     Surface(
         shape = RoundedCornerShape(36.dp),
         color = backgroundColor,
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = if (isPictureMode) 145.dp else 135.dp)
+            .heightIn(min = 148.dp)
             .border(
-                width = 3.dp,
+                width = 2.dp,
                 color = borderColor,
                 shape = RoundedCornerShape(36.dp)
             )
@@ -614,16 +756,35 @@ fun BentoGridCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 14.dp),
+                .padding(horizontal = 12.dp, vertical = 16.dp),
             contentAlignment = Alignment.Center
         ) {
+            // Decorative top-right halo, as in Stitch bento tiles
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 28.dp, y = (-28).dp)
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(borderColor.copy(alpha = 0.30f))
+            )
             if (badgeCount > 0) {
-                Badge(
-                    containerColor = BentoHelpRed,
-                    contentColor = Color.White,
-                    modifier = Modifier.align(Alignment.TopEnd)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .scale(badgeScale)
+                        .clip(CircleShape)
+                        .background(BentoHelpRed)
+                        .defaultMinSize(minWidth = 28.dp, minHeight = 28.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = badgeCount.toString(), fontWeight = FontWeight.Bold)
+                    Text(
+                        text = badgeCount.toString(),
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
                 }
             }
 
@@ -633,7 +794,7 @@ fun BentoGridCard(
             ) {
                 Text(
                     text = iconEmoji,
-                    fontSize = if (isPictureMode) 52.sp else 42.sp
+                    fontSize = if (isPictureMode) 52.sp else 44.sp
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -643,8 +804,8 @@ fun BentoGridCard(
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Black,
                         color = textColor,
-                        fontSize = if (isLargeText) 18.sp else 16.sp,
-                        letterSpacing = 0.5.sp
+                        fontSize = if (isLargeText) 18.sp else 17.sp,
+                        letterSpacing = 0.8.sp
                     )
                 )
 
@@ -652,8 +813,8 @@ fun BentoGridCard(
                     text = subtitle,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = textColor.copy(alpha = 0.65f),
-                        fontSize = 10.sp
+                        color = textColor.copy(alpha = 0.85f),
+                        fontSize = 11.sp
                     )
                 )
             }

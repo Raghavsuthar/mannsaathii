@@ -65,7 +65,7 @@ fun PatientTodayScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Top Back & Title Bar
+        // Top Back & Title Bar — Stitch p2: Home pill + speaker circle
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -75,16 +75,24 @@ fun PatientTodayScreen(
                 Button(
                     onClick = { viewModel.setPatientScreen(PatientScreen.HOME) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = BentoHeaderBg,
+                        containerColor = Color.White,
                         contentColor = BentoOnBackground
                     ),
                     shape = RoundedCornerShape(18.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, BentoHeaderBorder),
                     modifier = Modifier.testTag("today_back_button")
                 ) {
-                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = BentoGreenAccent)
+                    Text(text = "←", fontWeight = FontWeight.Black, color = BentoGreenAccent)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Home", fontWeight = FontWeight.Black, color = BentoOnBackground)
+                    Text(
+                        text = when (lang) {
+                            "hi" -> "Home घर"
+                            "gu" -> "Home ઘર"
+                            else -> "Home ઘર"
+                        },
+                        fontWeight = FontWeight.Black,
+                        color = BentoOnBackground
+                    )
                 }
 
                 IconButton(
@@ -98,40 +106,84 @@ fun PatientTodayScreen(
                     },
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(CircleShape)
                         .background(Color.White)
-                        .border(1.dp, BentoHeaderBorder, RoundedCornerShape(16.dp))
+                        .border(1.dp, BentoHeaderBorder, CircleShape)
                 ) {
-                    Text(text = "🔊", fontSize = 24.sp)
+                    Text(text = "🔊", fontSize = 22.sp)
                 }
             }
         }
 
         item {
-            Text(
-                text = "☀️ " + LocaleHelper.get("orientation_title", lang),
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Black,
-                    color = BentoOnBackground,
-                    fontSize = if (isLargeText) 28.sp else 24.sp
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = when (lang) {
+                        "hi" -> "☀️ Today आज"
+                        "gu" -> "☀️ Today આજ"
+                        else -> "☀️ Today આજ"
+                    },
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        color = BentoOnBackground,
+                        fontSize = if (isLargeText) 28.sp else 24.sp
+                    ),
+                    modifier = Modifier.weight(1f, fill = false)
                 )
-            )
+                Surface(
+                    shape = CircleShape,
+                    color = BentoTodayBg,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BentoTodayBorder)
+                ) {
+                    Text(
+                        text = when (lang) {
+                            "hi" -> "Live Clock • सक्रिय"
+                            "gu" -> "Live Clock • સક્રિય"
+                            else -> "Live Clock • સક્રિય"
+                        },
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = BentoTodayText,
+                            fontSize = 11.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "👉 " + LocaleHelper.get("tap_to_hear", lang),
+                text = when (lang) {
+                    "hi" -> "👉 Tap any card to hear it aloud • सुनने के लिए स्पर्श करो"
+                    "gu" -> "👉 Tap any card to hear it aloud • સાંભળવા માટે સ્પર્શ કરો"
+                    else -> "👉 Tap any card to hear it aloud • સાંભળવા માટે સ્પર્શ કરો"
+                },
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = BentoGreenAccent,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
             )
         }
 
-        // 1. DAY & TIME Bento Card
+        // 1. DAY & TIME Bento Card — CURRENT TIME • સમય
         item {
             OrientationBentoCard(
                 icon = "⏰",
-                label = LocaleHelper.get("time", lang),
+                label = when (lang) {
+                    "hi" -> "CURRENT TIME • समय"
+                    "gu" -> "CURRENT TIME • સમય"
+                    else -> "CURRENT TIME • સમય"
+                },
                 value = timeFormatted,
-                subValue = dayFormatted,
+                subValue = when (lang) {
+                    "hi" -> "$dayFormatted • शुभ दिन"
+                    "gu" -> "$dayFormatted • શુભ દિવસ"
+                    else -> "$dayFormatted • શુભ દિવસ"
+                },
                 backgroundColor = BentoTodayBg,
                 borderColor = BentoTodayBorder,
                 textColor = BentoTodayText,
@@ -146,13 +198,17 @@ fun PatientTodayScreen(
             )
         }
 
-        // 2. DATE Bento Card
+        // 2. DATE Bento Card — TODAY'S DATE • આજની તારીખ
         item {
             OrientationBentoCard(
                 icon = "📅",
-                label = LocaleHelper.get("date", lang),
+                label = when (lang) {
+                    "hi" -> "TODAY'S DATE • आज की तारीख"
+                    "gu" -> "TODAY'S DATE • આજની તારીખ"
+                    else -> "TODAY'S DATE • આજની તારીખ"
+                },
                 value = dateFormatted,
-                subValue = "Year 2026",
+                subValue = "Year: Two Thousand Twenty-Six • ૨૦૨૬",
                 backgroundColor = BentoMemoriesBg,
                 borderColor = BentoMemoriesBorder,
                 textColor = BentoMemoriesText,
@@ -167,13 +223,21 @@ fun PatientTodayScreen(
             )
         }
 
-        // 3. PLACE Bento Card
+        // 3. PLACE Bento Card — WHERE YOU ARE • તમે ક્યાં છો
         item {
             OrientationBentoCard(
                 icon = "📍",
-                label = LocaleHelper.get("location", lang),
+                label = when (lang) {
+                    "hi" -> "WHERE YOU ARE • आप कहाँ हैं"
+                    "gu" -> "WHERE YOU ARE • તમે ક્યાં છો"
+                    else -> "WHERE YOU ARE • તમે ક્યાં છો"
+                },
                 value = uiState.profile.city,
-                subValue = "At home, surrounded by love",
+                subValue = when (lang) {
+                    "hi" -> "अपने घर में, प्यार से घिरे • At home, surrounded by love"
+                    "gu" -> "પોતાના ઘરમાં શાંતિથી • At home, surrounded by love"
+                    else -> "At home, surrounded by love • પોતાના ઘરમાં શાંતિથી"
+                },
                 backgroundColor = BentoMyDayBg,
                 borderColor = BentoMyDayBorder,
                 textColor = BentoMyDayText,
@@ -188,13 +252,21 @@ fun PatientTodayScreen(
             )
         }
 
-        // 4. YOU ARE (Patient Identity Card)
+        // 4. YOU ARE (Patient Identity Card) — YOUR IDENTITY • તમારી ઓળખ
         item {
             OrientationBentoCard(
                 icon = "👵",
-                label = LocaleHelper.get("you_are", lang),
+                label = when (lang) {
+                    "hi" -> "YOUR IDENTITY • आपकी पहचान"
+                    "gu" -> "YOUR IDENTITY • તમારી ઓળખ"
+                    else -> "YOUR IDENTITY • તમારી ઓળખ"
+                },
                 value = "${uiState.profile.name} (${uiState.profile.preferredName})",
-                subValue = "Age: ${uiState.profile.age} Years",
+                subValue = when (lang) {
+                    "hi" -> "उम्र ${uiState.profile.age} • प्यारी माँ और दादी"
+                    "gu" -> "ઉંમર ${uiState.profile.age} • વહાલા મા અને દાદી • કમળા બા"
+                    else -> "Age ${uiState.profile.age} • Loved mother & grandmother • કમળા બા"
+                },
                 backgroundColor = BentoPeopleBg,
                 borderColor = BentoPeopleBorder,
                 textColor = BentoPeopleText,
@@ -209,16 +281,20 @@ fun PatientTodayScreen(
             )
         }
 
-        // 5. CAREGIVER Card
+        // 5. CAREGIVER Card — PRIMARY CAREGIVER • સંભાળ રાખનાર
         item {
             OrientationBentoCard(
                 icon = "👩",
-                label = LocaleHelper.get("caregiver_is", lang),
+                label = when (lang) {
+                    "hi" -> "PRIMARY CAREGIVER • देखभालकर्ता"
+                    "gu" -> "PRIMARY CAREGIVER • સંભાળ રાખનાર"
+                    else -> "PRIMARY CAREGIVER • સંભાળ રાખનાર"
+                },
                 value = uiState.profile.caregiverName,
-                subValue = "${uiState.profile.caregiverRelationship} • ${uiState.profile.caregiverPhone}",
-                backgroundColor = BentoAiBg,
-                borderColor = BentoAiBorder,
-                textColor = BentoAiText,
+                subValue = "${uiState.profile.caregiverRelationship} • ${uiState.profile.caregiverPhone} • તમારી સાથે છે",
+                backgroundColor = BentoMoodBg,
+                borderColor = BentoMoodBorder,
+                textColor = BentoMoodText,
                 onClick = {
                     val speech = when (lang) {
                         "hi" -> "आपकी मुख्य देखभालकर्ता आपकी ${uiState.profile.caregiverRelationship} ${uiState.profile.caregiverName} हैं।"
@@ -230,16 +306,24 @@ fun PatientTodayScreen(
             )
         }
 
-        // 6. NEXT IMPORTANT EVENT Card
+        // 6. NEXT IMPORTANT EVENT Card — UPCOMING STEP • હવે પછીનું કામ
         item {
             OrientationBentoCard(
-                icon = "✨",
-                label = LocaleHelper.get("next_event", lang),
+                icon = "💊",
+                label = when (lang) {
+                    "hi" -> "UPCOMING STEP • अगला काम"
+                    "gu" -> "UPCOMING STEP • હવે પછીનું કામ"
+                    else -> "UPCOMING STEP • હવે પછીનું કામ"
+                },
                 value = nextEventTitle,
-                subValue = "Next scheduled item for today",
-                backgroundColor = BentoMoodBg,
-                borderColor = BentoMoodBorder,
-                textColor = BentoMoodText,
+                subValue = when (lang) {
+                    "hi" -> "गर्म पानी के साथ, चाय के बाद • Take with warm water after tea"
+                    "gu" -> "ચા પછી ગરમ પાણી સાથે • Take with warm water after tea"
+                    else -> "Take with warm water after tea • ચા પછી ગરમ પાણી સાથે"
+                },
+                backgroundColor = BentoTodayBg,
+                borderColor = BentoTodayBorder,
+                textColor = BentoTodayText,
                 onClick = {
                     val speech = when (lang) {
                         "hi" -> "आपका अगला कार्य $nextEventTitle है।"
@@ -249,6 +333,69 @@ fun PatientTodayScreen(
                     viewModel.speakText(speech)
                 }
             )
+        }
+
+        // 7. Reassurance banner — Everything is okay • બધું બરાબર છે (Stitch p2)
+        item {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = Color.White,
+                shadowElevation = 1.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, BentoTodayBorder, RoundedCornerShape(28.dp))
+                    .clickable {
+                        val speech = when (lang) {
+                            "hi" -> "सब कुछ ठीक है। आप सुरक्षित हैं और आपकी देखभालकर्ता पास में हैं। आराम से बैठें।"
+                            "gu" -> "બધું બરાબર છે. તમે સુરક્ષિત છો અને તમારી સંભાળ રાખનાર નજીક છે. આરામથી બેસો."
+                            else -> "Everything is okay. You are safe, loved, and your caregiver is nearby. Please relax."
+                        }
+                        viewModel.speakText(speech)
+                    }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(BentoTodayBg),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "🛡️", fontSize = 24.sp)
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = when (lang) {
+                                "hi" -> "Everything is okay • सब ठीक है"
+                                "gu" -> "Everything is okay • બધું બરાબર છે"
+                                else -> "Everything is okay • બધું બરાબર છે"
+                            },
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                color = BentoOnBackground
+                            )
+                        )
+                        Text(
+                            text = when (lang) {
+                                "hi" -> "आप सुरक्षित हैं, और आपकी देखभालकर्ता पास में हैं। आराम से बैठें।"
+                                "gu" -> "You are safe, loved, and Radha is nearby. આરામથી બેસો."
+                                else -> "You are safe, loved, and Radha is nearby. આરામથી બેસો."
+                            },
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = BentoOnBackground.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Medium
+                            ),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }
