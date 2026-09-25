@@ -1,5 +1,7 @@
 package com.example.ui.patient
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +39,7 @@ fun PatientTodayScreen(
 ) {
     val lang = uiState.profile.language
     val isLargeText = uiState.profile.largeTextMode
+    val context = LocalContext.current
 
     val now = remember { Date() }
     val timeFormatted = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now) }
@@ -157,15 +161,78 @@ fun PatientTodayScreen(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = when (lang) {
-                    "hi" -> "👉 Tap any card to hear it aloud • सुनने के लिए स्पर्श करो"
-                    "gu" -> "👉 Tap any card to hear it aloud • સાંભળવા માટે સ્પર્શ કરો"
-                    else -> "👉 Tap any card to hear it aloud • સાંભળવા માટે સ્પર્શ કરો"
+                    "hi" -> "Daily Cognitive Orientation • दैनिक दिशा-सूचन"
+                    "gu" -> "Daily Cognitive Orientation • દૈનિક દિશા-સૂચન"
+                    else -> "Daily Cognitive Orientation • દૈનિક દિશા-સૂચન"
                 },
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = BentoGreenAccent,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = BentoOnBackground.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp
                 )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            // Audio hint banner — Stitch: green hearing icon + two-line text
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                shadowElevation = 2.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, BentoHeaderBorder, RoundedCornerShape(20.dp))
+                    .clickable {
+                        viewModel.speakText(
+                            when (lang) {
+                                "hi" -> "किसी भी कार्ड को छूकर सुनें।"
+                                "gu" -> "સાંભળવા માટે કોઈપણ કાર્ડ પર સ્પર્શ કરો."
+                                else -> "Tap any card to hear it aloud."
+                            }
+                        )
+                    }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(BentoGreenAccent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "👂", fontSize = 20.sp)
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = when (lang) {
+                                "hi" -> "👉 Tap any card to hear it aloud"
+                                "gu" -> "👉 Tap any card to hear it aloud"
+                                else -> "👉 Tap any card to hear it aloud"
+                            },
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = BentoGreenAccent,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        )
+                        Text(
+                            text = when (lang) {
+                                "hi" -> "सुनने के लिए किसी भी कार्ड को छुएं"
+                                "gu" -> "સાંભળવા માટે કોઈપણ કાર્ડ પર સ્પર્શ કરો"
+                                else -> "સાંભળવા માટે કોઈપણ કાર્ડ પર સ્પર્શ કરો"
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = BentoOnBackground.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
+                }
             )
         }
 
@@ -270,6 +337,11 @@ fun PatientTodayScreen(
                 backgroundColor = BentoPeopleBg,
                 borderColor = BentoPeopleBorder,
                 textColor = BentoPeopleText,
+                verifiedStripText = when (lang) {
+                    "hi" -> "Respected Elder of Patel Family • पटेल परिवार की मुखिया"
+                    "gu" -> "Respected Elder of Patel Family • પટેલ પરિવારના મુખિયા"
+                    else -> "Respected Elder of Patel Family • પટેલ પરિવારના મુખિયા"
+                },
                 onClick = {
                     val speech = when (lang) {
                         "hi" -> "आप ${uiState.profile.name} हैं। सब आपको प्यार से ${uiState.profile.preferredName} कहते हैं।"
@@ -281,20 +353,42 @@ fun PatientTodayScreen(
             )
         }
 
-        // 5. CAREGIVER Card — PRIMARY CAREGIVER • સંભાળ રાખનાર
+        // 5. CAREGIVER Card — PRIMARY CAREGIVER • સંભાળ + in-card Call button (Stitch)
         item {
             OrientationBentoCard(
                 icon = "👩",
                 label = when (lang) {
                     "hi" -> "PRIMARY CAREGIVER • देखभालकर्ता"
-                    "gu" -> "PRIMARY CAREGIVER • સંભાળ રાખનાર"
-                    else -> "PRIMARY CAREGIVER • સંભાળ રાખનાર"
+                    "gu" -> "PRIMARY CAREGIVER • સંભાળ"
+                    else -> "PRIMARY CAREGIVER • સંભાળ"
                 },
-                value = uiState.profile.caregiverName,
-                subValue = "${uiState.profile.caregiverRelationship} • ${uiState.profile.caregiverPhone} • તમારી સાથે છે",
+                value = "${uiState.profile.caregiverName} (${uiState.profile.caregiverRelationship})",
+                subValue = when (lang) {
+                    "hi" -> "तुम्हारे साथ ही घर में है • In the home"
+                    "gu" -> "તમારી સાથે જ ઘરમાં છે • In the home"
+                    else -> "તમારી સાથે જ ઘરમાં છે • In the home"
+                },
                 backgroundColor = BentoMoodBg,
                 borderColor = BentoMoodBorder,
                 textColor = BentoMoodText,
+                showCallButton = true,
+                callButtonText = when (lang) {
+                    "hi" -> "📞 Call ${uiState.profile.caregiverName} • फोन करो"
+                    "gu" -> "📞 Call ${uiState.profile.caregiverName} • ફોન કરો"
+                    else -> "📞 Call ${uiState.profile.caregiverName} • ફોન કરો"
+                },
+                onCallClick = {
+                    try {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_DIAL,
+                                Uri.parse("tel:${uiState.profile.caregiverPhone.replace(" ", "")}")
+                            )
+                        )
+                    } catch (e: Exception) {
+                        viewModel.speakText("Calling ${uiState.profile.caregiverName}")
+                    }
+                },
                 onClick = {
                     val speech = when (lang) {
                         "hi" -> "आपकी मुख्य देखभालकर्ता आपकी ${uiState.profile.caregiverRelationship} ${uiState.profile.caregiverName} हैं।"
@@ -383,15 +477,76 @@ fun PatientTodayScreen(
                         )
                         Text(
                             text = when (lang) {
-                                "hi" -> "आप सुरक्षित हैं, और आपकी देखभालकर्ता पास में हैं। आराम से बैठें।"
-                                "gu" -> "You are safe, loved, and Radha is nearby. આરામથી બેસો."
-                                else -> "You are safe, loved, and Radha is nearby. આરામથી બેસો."
+                                "hi" -> "You are safe & deeply loved"
+                                "gu" -> "You are safe & deeply loved"
+                                else -> "You are safe & deeply loved"
+                            },
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = BentoTodayText,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        Text(
+                            text = when (lang) {
+                                "hi" -> "आपकी देखभालकर्ता पास में हैं। गहरी सांस लें, चाय का आनंद लें और आराम करें। चिंता की कोई जरूरत नहीं।"
+                                "gu" -> "Radha is nearby and looking after you. Take a gentle breath, enjoy your tea, and relax. આરામથી બેસો બા, ચિંતા કરવાની કોઈ જરૂર નથી."
+                                else -> "Radha is nearby and looking after you. Take a gentle breath, enjoy your tea, and relax. આરામથી બેસો બા, ચિંતા કરવાની કોઈ જરૂર નથી."
                             },
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = BentoOnBackground.copy(alpha = 0.7f),
                                 fontWeight = FontWeight.Medium
                             ),
-                            modifier = Modifier.padding(top = 2.dp)
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // SOS footer — one-tap emergency from Today (Stitch bottom bar)
+        item {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = BentoHelpRed,
+                shadowElevation = 4.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, BentoHelpRedBorder, RoundedCornerShape(24.dp))
+                    .clickable { viewModel.setPatientScreen(PatientScreen.HELP) }
+                    .testTag("today_sos_footer")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "HELP / મદદ",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                color = Color.White,
+                                fontSize = 20.sp
+                            )
+                        )
+                        Text(
+                            text = "तुरंत सहायता प्राप्त करें",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                    }
+                    Surface(shape = CircleShape, color = Color.White) {
+                        Text(
+                            text = "SOS",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                color = BentoHelpRed
+                            ),
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
                         )
                     }
                 }
@@ -409,70 +564,143 @@ fun OrientationBentoCard(
     backgroundColor: Color,
     borderColor: Color,
     textColor: Color,
+    verifiedStripText: String? = null,
+    showCallButton: Boolean = false,
+    callButtonText: String = "",
+    onCallClick: () -> Unit = {},
     onClick: () -> Unit
 ) {
+    // New Stitch: calm white cards with hard tactile shelf + categorical accent bar.
+    // backgroundColor/borderColor/textColor now drive the accent + verified strip,
+    // keeping bento identity while matching the white-card orientation look.
     Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = backgroundColor,
-        shadowElevation = 2.dp,
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        shadowElevation = 4.dp,
         modifier = Modifier
             .fillMaxWidth()
             .border(
-                width = 3.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(28.dp)
+                width = 2.dp,
+                color = BentoHeaderBorder,
+                shape = RoundedCornerShape(24.dp)
             )
             .clickable { onClick() }
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
                 modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color.White.copy(alpha = 0.85f)),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(text = icon, fontSize = 28.sp)
+                // Categorical accent bar
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(borderColor)
+                )
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(backgroundColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = icon, fontSize = 28.sp)
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = label.uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Black,
+                            color = BentoOnBackground.copy(alpha = 0.55f),
+                            letterSpacing = 1.sp,
+                            fontSize = 11.sp
+                        )
+                    )
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            color = BentoOnBackground,
+                            fontSize = 20.sp
+                        )
+                    )
+                    if (subValue.isNotBlank()) {
+                        Text(
+                            text = subValue,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = textColor.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(BentoHeaderBg.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🔊", fontSize = 18.sp)
+                }
             }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Black,
-                        color = textColor.copy(alpha = 0.75f),
-                        letterSpacing = 1.sp
-                    )
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        color = textColor
-                    )
-                )
-                if (subValue.isNotBlank()) {
+            if (verifiedStripText != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 14.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(backgroundColor)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = "✅", fontSize = 16.sp)
                     Text(
-                        text = subValue,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = textColor.copy(alpha = 0.85f),
-                            fontWeight = FontWeight.Bold
-                        )
+                        text = verifiedStripText,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = textColor,
+                            fontSize = 12.sp
+                        ),
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
 
-            Icon(
-                imageVector = Icons.Default.VolumeUp,
-                contentDescription = "Speak",
-                tint = textColor.copy(alpha = 0.7f)
-            )
+            if (showCallButton) {
+                Button(
+                    onClick = onCallClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BentoGreenAccent,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)
+                        .height(56.dp)
+                ) {
+                    Text(
+                        text = callButtonText,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp
+                        )
+                    )
+                }
+            }
         }
     }
 }
