@@ -233,7 +233,7 @@ fun PatientTodayScreen(
                         )
                     }
                 }
-            )
+            }
         }
 
         // 1. DAY & TIME Bento Card — CURRENT TIME • સમય

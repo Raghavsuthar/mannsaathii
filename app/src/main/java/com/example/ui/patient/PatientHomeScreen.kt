@@ -51,6 +51,9 @@ fun PatientHomeScreen(
     val dayRegional = remember(lang) { SimpleDateFormat("EEEE", LocaleHelper.localeFor(lang)).format(now) }
     val dateRegional = remember(lang) { SimpleDateFormat("dd MMMM yyyy", LocaleHelper.localeFor(lang)).format(now) }
 
+    val nextMed = uiState.medications.firstOrNull { it.status == MedicationStatus.PENDING }
+    val nextRoutine = uiState.routines.firstOrNull { !it.isCompleted }
+
     val calendar = remember { Calendar.getInstance() }
     val hourOfDay = remember { calendar.get(Calendar.HOUR_OF_DAY) }
     val greetingEn = remember(hourOfDay) {
