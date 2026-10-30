@@ -65,7 +65,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: MannSaathiRepository
     private val ttsHelper: TtsHelper = TtsHelper(application)
 
-    private val _uiState = MutableStateFlow(UiState(showSetupDialog = true))
+    private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     // Last medication list applied to WorkManager. Diffed on every emission

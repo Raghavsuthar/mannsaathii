@@ -10,28 +10,13 @@ import androidx.compose.ui.unit.sp
 // with native Unicode shaping, no matra clipping, and zero font loading latency.
 val MannsaathiFontFamily = FontFamily.Default
 
-// Set of Material typography styles
-private val defaultTypography = Typography()
+// Standard Material 3 typography styles with system font fallback
 val Typography = Typography(
-    displayLarge = defaultTypography.displayLarge.copy(fontFamily = MannsaathiFontFamily),
-    displayMedium = defaultTypography.displayMedium.copy(fontFamily = MannsaathiFontFamily),
-    displaySmall = defaultTypography.displaySmall.copy(fontFamily = MannsaathiFontFamily),
-    headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = MannsaathiFontFamily),
-    headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = MannsaathiFontFamily),
-    headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = MannsaathiFontFamily),
-    titleLarge = defaultTypography.titleLarge.copy(fontFamily = MannsaathiFontFamily),
-    titleMedium = defaultTypography.titleMedium.copy(fontFamily = MannsaathiFontFamily),
-    titleSmall = defaultTypography.titleSmall.copy(fontFamily = MannsaathiFontFamily),
-    bodyLarge = defaultTypography.bodyLarge.copy(
+    bodyLarge = TextStyle(
         fontFamily = MannsaathiFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
-    ),
-    bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = MannsaathiFontFamily),
-    bodySmall = defaultTypography.bodySmall.copy(fontFamily = MannsaathiFontFamily),
-    labelLarge = defaultTypography.labelLarge.copy(fontFamily = MannsaathiFontFamily),
-    labelMedium = defaultTypography.labelMedium.copy(fontFamily = MannsaathiFontFamily),
-    labelSmall = defaultTypography.labelSmall.copy(fontFamily = MannsaathiFontFamily)
+    )
 )

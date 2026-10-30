@@ -36,7 +36,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         MedicationNotificationHelper.createNotificationChannel(this)
-        com.example.util.SecurityHelper.evaluateEnvironment(applicationContext)
+        try {
+            com.example.util.SecurityHelper.evaluateEnvironment(applicationContext)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Security evaluation error", e)
+        }
         handleNotificationIntent(intent)
 
         setContent {

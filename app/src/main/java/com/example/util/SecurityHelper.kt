@@ -121,11 +121,11 @@ object SecurityHelper {
     }
 
     /**
-     * Checks for evidence of a rooted device without crashing.
+     * Checks for evidence of a rooted device without crashing or blocking the UI thread.
      * Looks for test-keys build tags and common su/Superuser binaries.
      */
     fun checkRoot(): Boolean {
-        return checkBuildTags() || checkSuBinaryPaths() || checkSuExecution()
+        return checkBuildTags() || checkSuBinaryPaths()
     }
 
     private fun checkBuildTags(): Boolean {
@@ -154,19 +154,6 @@ object SecurityHelper {
             }
         }
         return false
-    }
-
-    private fun checkSuExecution(): Boolean {
-        var process: Process? = null
-        return try {
-            process = Runtime.getRuntime().exec(arrayOf("/system/xbin/which", "su"))
-            val exitCode = process.waitFor()
-            exitCode == 0
-        } catch (_: Exception) {
-            false
-        } finally {
-            process?.destroy()
-        }
     }
 
     /**
